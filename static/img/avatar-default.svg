@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- Cercle bleu -->
+  <circle cx="12" cy="12" r="12" fill="#5D87FF"></circle>
+  <!-- Silhouette blanche -->
+  <circle cx="12" cy="8" r="4" fill="white"></circle>
+  <path d="M12 13c-4 0-7 2-7 5v2h14v-2c0-3-3-5-7-5z" fill="white"></path>
+</svg>

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Clients{% endblock %}
+{% block content %}
+
+<h2 class="mb-4">👥 Liste des Clients</h2>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped align-middle table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Entreprise</th>
+            <th>Contact</th>
+            <th>Tel</th>
+            <th>Email</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in clients %}
+          <tr>
+            <td>{{ c.id }}</td>
+            <td>{{ c.company_name }}</td>
+            <td>{{ c.contact_name }}</td>
+            <td>{{ c.phone }}</td>
+            <td>{{ c.email }}</td>
+            <td>
+              <div class="d-flex flex-wrap gap-2">
+                <a href="{{ url_for('client_orders', client_id=c.id) }}" data-bs-toggle="tooltip" 
+                   data-bs-placement="bottom" title="Voir les commandes" 
+                   class="btn btn-sm btn-order flex-fill bi-eye">
+                </a>
+                <a href="{{ url_for('client_delivery', client_id=c.id) }}" data-bs-toggle="tooltip" 
+                   data-bs-placement="bottom" title="Voir les livraions"
+                   class="btn btn-sm btn-delivery flex-fill bi-eye">
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-muted mt-2 text-center">
+      Affichage {{ start }} – {{ end }} sur {{ total_clients }} clients
+    </p>
+
+    <!-- Pagination externalisée -->
+    {% set endpoint = 'clients' %}
+    {% set params = {} %}
+    {% include 'pagination.html'%}
+
+  </div>
+</div>
+
+{% endblock %}

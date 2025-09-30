@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - NovoPrint{% endblock %}
+
+{% block content %}
+<h3 class="mb-4 fw-semibold">Tableau de Bord</h3>
+
+<div class="row g-3 mb-4">
+  <!-- Clients -->
+  <div class="col-md-4">
+    <div class="tile primary">
+      <div>
+        <div class="fw-semibold">Clients</div>
+        <div class="fs-2 fw-bold">{{ total_clients }}</div>
+      </div>
+      <i class="bi bi-people fs-1 opacity-75"></i>
+    </div>
+  </div>
+
+  <!-- Commandes -->
+  <div class="col-md-4">
+    <div class="tile success">
+      <div>
+        <div class="fw-semibold">Commandes</div>
+        <div class="d-flex flex-column gap-1 mt-2">
+          <span class="badge bg-success-subtle text-success border-success-subtle">
+            Livrées : {{ orders_livree }}
+          </span>
+          <span class="badge bg-info-subtle text-info border-info-subtle">
+            Livraison : {{ orders_livraison }}
+          </span>
+          <span class="badge bg-warning-subtle text-warning border-warning-subtle">
+            En cours : {{ orders_encours }}
+          </span>
+        </div>
+      </div>
+      <i class="bi bi-box-seam fs-1 opacity-75"></i>
+    </div>
+  </div>
+
+  <!-- Livraisons -->
+  <div class="col-md-4">
+    <div class="tile warning">
+      <div>
+        <div class="fw-semibold">Livraisons</div>
+        <div class="fs-2 fw-bold">{{ total_deliveries }}</div>
+      </div>
+      <i class="bi bi-truck fs-1 opacity-75"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Graph + Dernières commandes -->
+<div class="row g-4">
+  <!-- Graph -->
+  <div class="col-lg-6">
+    <div class="card widget p-3">
+      <h5 class="card-title mb-3">Répartition des commandes</h5>
+      <canvas id="ordersChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Dernières commandes -->
+  <div class="col-lg-6">
+    <div class="card widget p-3">
+      <h5 class="card-title mb-3">Dernières commandes</h5>
+      <table class="table table-dark table-hover mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Client</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in last_orders %}
+          <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.client_name }}</td>
+            <td>
+              {% if order.status == 'Livrée' %}
+                <span class="badge bg-success-subtle text-success border-success-subtle">{{ order.status }}</span>
+              {% elif order.status == 'En cours' %}
+                <span class="badge bg-warning-subtle text-warning border-warning-subtle">{{ order.status }}</span>
+              {% elif order.status == 'Annulée' %}
+                <span class="badge bg-danger-subtle text-danger border-danger-subtle">{{ order.status }}</span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary border-secondary-subtle">{{ order.status }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('ordersChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Livrées', 'En cours', 'Annulées'],
+      datasets: [{
+        data: [{{ orders_livree }}, {{ orders_encours }}, {{ orders_annulees or 0 }}],
+        backgroundColor: ['#22c55e', '#E9B949', '#EF4444']
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          labels: { color: '#E2E8F0' }
+        }
+      }
+    }
+  });
+</script>
+{% endblock %}

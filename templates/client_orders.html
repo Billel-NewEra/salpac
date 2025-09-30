@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Commandes – {{ client.company_name }}{% endblock %}
+{% block content %}
+
+<h2 class="mb-4">📦 Commandes du client « {{ client.company_name }} »</h2>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped align-middle table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th>Cmd</th>
+            <th>CMDCL</th>
+            <th>Produit</th>
+            <th>Quantité</th>
+            <th>Situation</th>
+            <th>Livré</th>
+            <th>Reste</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in orders %}
+          <tr>
+            <td>{{ o.num_reservation }}</td>
+            <td>{{ o.cmdl }}</td>
+            <td>{{ o.produit }}</td>
+            <td>{{ o.qte }}</td>
+            <td>
+  {% if o.situation == "LIVREE" %}
+    <span class="badge bg-success">{{ o.situation }}</span>
+  {% elif o.situation == "LIVRAISON" %}
+    <span class="badge bg-info text-dark">{{ o.situation }}</span>
+  {% elif o.situation == "EN COURS" %}
+    <span class="badge bg-warning text-dark">{{ o.situation }}</span>
+  {% else %}
+    <span class="badge bg-secondary">{{ o.situation }}</span>
+  {% endif %}
+</td>
+            <td>{{ o.total_livre }}</td>
+            <td>{{ o.reste }}</td>
+            <td>
+              <a href="{{ url_for('order_delivery', order_id=o.num_reservation, from_client=client.id) }}" 
+                 class="btn btn-sm btn-delivery bi-eye">
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-muted mt-2 text-center">
+      Affichage {{ start }} – {{ end }} sur {{ total_orders }} commandes
+    </p>
+
+    {% set endpoint = 'client_orders' %}
+    {% set params = {'client_id': client.id} %}
+    {% include 'pagination.html' %}
+
+    <!-- Bouton retour -->
+    <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary mt-3">⬅️ Retour à tous les clients</a>
+
+  </div>
+</div>
+
+{% endblock %}

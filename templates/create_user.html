@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Créer un utilisateur{% endblock %}
+{% block content %}
+
+<h2 class="mb-4"><i class="bi bi-person-plus-fill me-1 text-admin-connexion"></i> Créer un compte client</h2>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="POST">
+
+      <!-- Client associé AVANT -->
+      <div class="mb-3">
+        <label for="client_id" class="form-label">Client associé</label>
+        <select name="client_id" id="client_id" class="form-select" required>
+          <option value="">-- Choisir un client --</option>
+          {% for c in clients %}
+            <option value="{{ c.id }}">{{ c.company_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Nom d'utilisateur -->
+      <div class="mb-3">
+        <label for="username" class="form-label">Nom d'utilisateur</label>
+        <input type="text" name="username" id="username" class="form-control" required>
+      </div>
+
+      <!-- Mot de passe -->
+      <div class="mb-3">
+        <label for="password" class="form-label">Mot de passe</label>
+        <input type="password" name="password" id="password" class="form-control" required>
+      </div>
+
+      <!-- Boutons -->
+      <button type="submit" class="btn btn-primary">Créer le compte</button>
+      <a href="{{ url_for('list_users') }}" class="btn btn-outline-secondary">Annuler</a>
+    </form>
+  </div>
+</div>
+
+<!-- jQuery obligatoire -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Select2 CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+  $(document).ready(function () {
+    // Activer Select2
+    $('#client_id').select2({
+      placeholder: "🔍 Rechercher un client...",
+      allowClear: true,
+      width: '100%',
+      minimumResultsForSearch: 0  // force la recherche même si peu d'options
+    });
+
+    // Hack pour que le curseur tombe direct dans la recherche quand on clique
+    $('#client_id').on('select2:open', function () {
+      document.querySelector('.select2-container--open .select2-search__field').focus();
+    });
+  });
+</script>
+
+{% endblock %}

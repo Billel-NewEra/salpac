@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <h2 class="mb-4">➕ Ajouter une livraison - Commande #{{ order.id }}</h2>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="POST">
+        <!-- Sélection du produit -->
+        <div class="mb-3">
+          <label for="order_item_id" class="form-label">Produit</label>
+          <select name="order_item_id" id="order_item_id" class="form-select" required>
+            <option value="">-- Choisir un produit --</option>
+            {% for item in available_items %}
+              <option value="{{ item.id }}">
+                {{ item.product }} (Restant: {{ item.remaining_quantity }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Quantité -->
+        <div class="mb-3">
+          <label for="quantity" class="form-label">Quantité à livrer</label>
+          <input type="number" name="quantity" id="quantity" class="form-control" min="1" required>
+        </div>
+
+        <!-- BL_Phy -->
+        <div class="mb-3">
+          <label for="bl_phy" class="form-label">BL_Phy</label>
+          <input type="text" name="bl_phy" id="bl_phy" class="form-control" placeholder="Numéro du bon de livraison (optionnel)">
+        </div>
+
+        <!-- Boutons -->
+        <div class="d-flex justify-content-between">
+          {% if request.args.get('from_client') %}
+            <a href="{{ url_for('client_orders', client_id=request.args.get('from_client')) }}" class="btn btn-outline-secondary">
+              ⬅ Retour aux commandes du client
+            </a>
+          {% else %}
+            <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary">
+              ⬅ Retour aux commandes
+            </a>
+          {% endif %}
+
+          <button type="submit" class="btn btn-primary">✅ Ajouter la livraison</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

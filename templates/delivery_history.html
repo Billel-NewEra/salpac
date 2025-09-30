@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Historique des Livraisons{% endblock %}
+{% block content %}
+<h2>Historique des Livraisons pour la Commande #{{ order.id }}</h2>
+<p><strong>Client:</strong> {{ order.client.company_name }} | <strong>Status:</strong> {{ order.status }}</p>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>ID Livraison</th>
+      <th>Produit</th>
+      <th>Quantité livrée</th>
+      <th>Quantité restante</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for dn in order.delivery_notes %}
+    <tr>
+      <td>{{ dn.id }}</td>
+      <td>{{ dn.order_item.product }}</td>
+      <td>{{ dn.quantity }}</td>
+      <td>{{ dn.order_item.remaining_quantity }}</td>
+    </tr>
+    {% endfor %}
+    {% if order.delivery_notes|length == 0 %}
+    <tr>
+      <td colspan="4" class="text-center">Aucune livraison pour cette commande</td>
+    </tr>
+    {% endif %}
+  </tbody>
+</table>
+<a href="{{ url_for('orders') }}" class="btn btn-secondary">Retour aux commandes</a>
+{% endblock %}

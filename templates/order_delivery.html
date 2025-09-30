@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Livraisons – Commande {{ order_id }}{% endblock %}
+{% block content %}
+
+<h2 class="mb-4">🚚 Livraisons de la commande n° {{ order_id }}</h2>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped align-middle table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th>NL</th>
+            <th>Client</th>
+            <th>Produit</th>
+            <th>Quantité</th>
+            <th>Date livraison</th>
+            <th>Observation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in delivery %}
+          <tr>
+            <td>{{ d.nl }}</td>
+            <td>{{ d.client }}</td>
+            <td>{{ d.produit }}</td>
+            <td>{{ d.qte }}</td>
+            <td>{{ d.date_livraison }}</td>
+            <td>{{ d.observation }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-muted mt-2 text-center">
+      Affichage {{ start }} – {{ end }} sur {{ total_delivery }} livraisons
+    </p>
+
+    <!-- Pagination (préserve from_client) -->
+    {% set params = {'order_id': order_id} %}
+{% if from_client %}
+  {% set params = params.update({'from_client': from_client}) or params %}
+{% endif %}
+
+{% set endpoint = 'order_delivery' %}
+{% include 'pagination.html' %}
+
+    <!-- Retour contextuel -->
+    {% if from_client %}
+      <a href="{{ url_for('client_orders', client_id=from_client) }}" class="btn btn-outline-secondary mt-3">
+        ⬅️ Retour aux commandes du client
+      </a>
+    {% else %}
+      <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary mt-3">
+        ⬅️ Retour à toutes les commandes
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

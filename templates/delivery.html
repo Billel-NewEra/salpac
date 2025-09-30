@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Livraisons{% endblock %}
+{% block content %}
+
+<h2 class="mb-4">🚚 Liste des Livraisons</h2>
+
+<!-- Filtres améliorés -->
+<form method="get" action="{{ url_for('delivery') }}" class="mb-3">
+  <div class="row g-2">
+
+    <!-- Filtre période -->
+    <div class="col-md">
+      <div class="form-floating">
+        <select id="period" name="period" class="form-select" onchange="this.form.submit()">
+          <option value="all" {% if period == 'all' %}selected{% endif %}>Toutes</option>
+          <option value="today" {% if period == 'today' %}selected{% endif %}>Aujourd'hui</option>
+          <option value="yesterday" {% if period == 'yesterday' %}selected{% endif %}>Hier</option>
+          <option value="week" {% if period == 'week' %}selected{% endif %}>Semaine en cours</option>
+          <option value="month" {% if period == 'month' %}selected{% endif %}>Mois en cours</option>
+          <option value="year" {% if period == 'year' %}selected{% endif %}>Année en cours</option>
+        </select>
+        <label for="period">📅 Période</label>
+      </div>
+    </div>
+
+    <!-- Filtre client (uniquement admin) -->
+{% if current_user.role == 'admin' %}
+<div class="col-md">
+  <div class="form-floating">
+    <input type="text" name="client" value="{{ client }}" class="form-control"
+           id="client" placeholder="Client"
+           onkeydown="if(event.key==='Enter'){this.form.submit();}">
+    <label for="client">🔎 Client</label>
+  </div>
+</div>
+{% endif %}
+
+    <!-- Filtre produit -->
+    <div class="col-md">
+      <div class="form-floating">
+        <input type="text" name="product" value="{{ product }}" class="form-control"
+               id="product" placeholder="Produit"
+               onkeydown="if(event.key==='Enter'){this.form.submit();}">
+        <label for="product">🔎 Produit</label>
+      </div>
+    </div>
+
+    <!-- Bouton -->
+    <div class="col-md-auto d-flex align-items-stretch">
+      <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+    </div>
+
+  </div>
+</form>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped align-middle table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th>NL</th>
+            {% if current_user.role == 'admin' %}
+              <th>Client</th>
+            {% endif %}
+            <th>Produit</th>
+            <th>Quantité</th>
+            <th>Date livraison</th>
+            <th>Observation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in delivery %}
+          <tr>
+            <td>{{ d.nl }}</td>
+            {% if current_user.role == 'admin' %}
+              <td>{{ d.client }}</td>
+            {% endif %}
+            <td>{{ d.produit }}</td>
+            <td>{{ d.qte }}</td>
+            <td>{{ d.date_livraison }}</td>
+            <td>{{ d.observation }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-muted mt-2 text-center">
+      Affichage {{ start }} – {{ end }} sur {{ total_delivery }} livraisons
+    </p>
+
+    <!-- Pagination externalisée -->
+    {% set endpoint = 'delivery' %}
+    {% set params = {'period': period, 'client': client, 'product': product} %}
+    {% include 'pagination.html' %}
+
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Livraisons – {{ client.company_name }}{% endblock %}
+{% block content %}
+
+<h2 class="mb-4">🚚 Livraisons du client « {{ client.company_name }} »</h2>
+
+<table class="table table-striped align-middle">
+  <thead class="table-dark">
+    <tr>
+      <th>NL</th>
+      <th>Produit</th>
+      <th>Quantité</th>
+      <th>Montant</th>
+      <th>Date</th>
+      <th>Facture</th>
+      <th>Observation</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for d in delivery %}
+    <tr>
+      <td>{{ d.nl }}</td>
+      <td>{{ d.produit }}</td>
+      <td>{{ d.qte }}</td>
+      <td>{{ d.montant }}</td>
+      <td>{{ d.date_livraison }}</td>
+      <td>{{ d.facture }}</td>
+      <td>{{ d.observation }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p class="text-muted text-center">
+  Affichage {{ start }} – {{ end }} sur {{ total_delivery }} livraisons
+</p>
+
+{% set endpoint = 'client_delivery' %}
+{% set params = {'client_id': client.id} %}
+{% include 'pagination.html' %}
+
+<a href="{{ url_for('clients') }}" class="btn btn-outline-secondary mt-3">⬅️ Retour à tous les clients</a>
+
+{% endblock %}

@@ -1,0 +1,74 @@
+{# templates/pagination.html #}
+<nav aria-label="Navigation des pages">
+  <ul class="pagination justify-content-center mb-0">
+
+    <!-- Précédent -->
+    {% if page > 1 %}
+    <li class="page-item">
+      <a class="page-link"
+         href="{{ url_for(endpoint, page=page-1, **params) }}"
+         data-page="{{ page-1 }}">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+    </li>
+    {% else %}
+    <li class="page-item disabled">
+      <span class="page-link"><i class="bi bi-arrow-left"></i></span>
+    </li>
+    {% endif %}
+
+    <!-- Pages -->
+    {% set start_page = 1 if page - 2 < 1 else page - 2 %}
+    {% set end_page = total_pages if page + 2 > total_pages else page + 2 %}
+
+    {% if start_page > 1 %}
+      <li class="page-item">
+        <a class="page-link"
+           href="{{ url_for(endpoint, page=1, **params) }}"
+           data-page="1">1</a>
+      </li>
+      {% if start_page > 2 %}
+        <li class="page-item disabled">
+          <span class="page-link">…</span>
+        </li>
+      {% endif %}
+    {% endif %}
+
+    {% for p in range(start_page, end_page + 1) %}
+      <li class="page-item {% if p == page %}active{% endif %}">
+        <a class="page-link"
+           href="{{ url_for(endpoint, page=p, **params) }}"
+           data-page="{{ p }}">{{ p }}</a>
+      </li>
+    {% endfor %}
+
+    {% if end_page < total_pages %}
+      {% if end_page < total_pages - 1 %}
+        <li class="page-item disabled">
+          <span class="page-link">…</span>
+        </li>
+      {% endif %}
+      <li class="page-item">
+        <a class="page-link"
+           href="{{ url_for(endpoint, page=total_pages, **params) }}"
+           data-page="{{ total_pages }}">{{ total_pages }}</a>
+      </li>
+    {% endif %}
+
+    <!-- Suivant -->
+    {% if page < total_pages %}
+    <li class="page-item">
+      <a class="page-link"
+         href="{{ url_for(endpoint, page=page+1, **params) }}"
+         data-page="{{ page+1 }}">
+        <i class="bi bi-arrow-right"></i>
+      </a>
+    </li>
+    {% else %}
+    <li class="page-item disabled">
+      <span class="page-link"><i class="bi bi-arrow-right"></i></span>
+    </li>
+    {% endif %}
+
+  </ul>
+</nav>
