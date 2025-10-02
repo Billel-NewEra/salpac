@@ -2,22 +2,22 @@
 {% block title %}Commandes – {{ client.company_name }}{% endblock %}
 {% block content %}
 
-<h2 class="mb-4">📦 Commandes du client « {{ client.company_name }} »</h2>
+<h4 class="mb-3">📦 Commandes du client « {{ client.company_name }} »</h4>
 
-<div class="card shadow-sm">
-  <div class="card-body">
+<div class="card widget" id="clientOrdersCard">
+  <div class="card-body p-2">
     <div class="table-responsive">
-      <table class="table table-striped align-middle table-bordered">
-        <thead class="table-dark">
+      <table class="table table-dark table-compact table-striped table-borderless align-middle">
+        <thead>
           <tr>
             <th>Cmd</th>
             <th>CMDCL</th>
             <th>Produit</th>
-            <th>Quantité</th>
-            <th>Situation</th>
-            <th>Livré</th>
-            <th>Reste</th>
-            <th>Actions</th>
+            <th class="text-end">Quantité</th>
+            <th>Statut</th>
+            <th class="text-end">Livré</th>
+            <th class="text-end">Reste</th>
+            <th class="text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -26,24 +26,27 @@
             <td>{{ o.num_reservation }}</td>
             <td>{{ o.cmdl }}</td>
             <td>{{ o.produit }}</td>
-            <td>{{ o.qte }}</td>
+            <td class="text-end">{{ o.qte }}</td>
             <td>
-  {% if o.situation == "LIVREE" %}
-    <span class="badge bg-success">{{ o.situation }}</span>
-  {% elif o.situation == "LIVRAISON" %}
-    <span class="badge bg-info text-dark">{{ o.situation }}</span>
-  {% elif o.situation == "EN COURS" %}
-    <span class="badge bg-warning text-dark">{{ o.situation }}</span>
-  {% else %}
-    <span class="badge bg-secondary">{{ o.situation }}</span>
-  {% endif %}
-</td>
-            <td>{{ o.total_livre }}</td>
-            <td>{{ o.reste }}</td>
-            <td>
-              <a href="{{ url_for('order_delivery', order_id=o.num_reservation, from_client=client.id) }}" 
-                 class="btn btn-sm btn-delivery bi-eye">
-              </a>
+              {% if o.situation == "LIVREE" %}
+                <span class="badge bg-success-subtle text-success border-success-subtle">Livrée</span>
+              {% elif o.situation == "LIVRAISON" %}
+                <span class="badge bg-info-subtle text-info border-info-subtle">Livraison</span>
+              {% elif o.situation == "EN COURS" %}
+                <span class="badge bg-warning-subtle text-warning border-warning-subtle">En cours</span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary border-secondary-subtle">{{ o.situation }}</span>
+              {% endif %}
+            </td>
+            <td class="text-end">{{ o.total_livre }}</td>
+            <td class="text-end">{{ o.reste }}</td>
+            <td class="text-center">
+              <div class="actions-cell">
+                <a href="{{ url_for('order_delivery', order_id=o.num_reservation, from_client=client.id) }}" 
+                   class="btn btn-sm btn-subtle" title="Voir livraisons">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </div>
             </td>
           </tr>
           {% endfor %}
@@ -51,17 +54,18 @@
       </table>
     </div>
 
-    <p class="text-muted mt-2 text-center">
+    <p class="text-muted mt-2 text-center small">
       Affichage {{ start }} – {{ end }} sur {{ total_orders }} commandes
     </p>
 
     {% set endpoint = 'client_orders' %}
     {% set params = {'client_id': client.id} %}
+    {% set target_anchor = 'clientOrdersCard' %}
     {% include 'pagination.html' %}
 
-    <!-- Bouton retour -->
-    <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary mt-3">⬅️ Retour à tous les clients</a>
-
+    <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary mt-3">
+      ⬅️ Retour à tous les clients
+    </a>
   </div>
 </div>
 

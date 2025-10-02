@@ -2,70 +2,66 @@
 {% block title %}Livraisons{% endblock %}
 {% block content %}
 
-<h2 class="mb-4">🚚 Liste des Livraisons</h2>
+<h4 class="mb-3">🚚 Liste des Livraisons</h4>
 
-<!-- Filtres améliorés -->
-<form method="get" action="{{ url_for('delivery') }}" class="mb-3">
-  <div class="row g-2">
+<!-- 🔎 Filtres -->
+<form method="get" action="{{ url_for('delivery') }}" class="mb-2">
+  <div class="row g-2 align-items-end">
 
-    <!-- Filtre période -->
-    <div class="col-md">
-      <div class="form-floating">
-        <select id="period" name="period" class="form-select" onchange="this.form.submit()">
-          <option value="all" {% if period == 'all' %}selected{% endif %}>Toutes</option>
-          <option value="today" {% if period == 'today' %}selected{% endif %}>Aujourd'hui</option>
-          <option value="yesterday" {% if period == 'yesterday' %}selected{% endif %}>Hier</option>
-          <option value="week" {% if period == 'week' %}selected{% endif %}>Semaine en cours</option>
-          <option value="month" {% if period == 'month' %}selected{% endif %}>Mois en cours</option>
-          <option value="year" {% if period == 'year' %}selected{% endif %}>Année en cours</option>
-        </select>
-        <label for="period">📅 Période</label>
-      </div>
+    <!-- Période -->
+    <div class="col-md-2">
+      <label for="period" class="form-label small">📅 Période</label>
+      <select id="period" name="period" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="all" {% if period == 'all' %}selected{% endif %}>Toutes</option>
+        <option value="today" {% if period == 'today' %}selected{% endif %}>Aujourd'hui</option>
+        <option value="yesterday" {% if period == 'yesterday' %}selected{% endif %}>Hier</option>
+        <option value="week" {% if period == 'week' %}selected{% endif %}>Semaine</option>
+        <option value="month" {% if period == 'month' %}selected{% endif %}>Mois</option>
+        <option value="year" {% if period == 'year' %}selected{% endif %}>Année</option>
+      </select>
     </div>
 
-    <!-- Filtre client (uniquement admin) -->
-{% if current_user.role == 'admin' %}
-<div class="col-md">
-  <div class="form-floating">
-    <input type="text" name="client" value="{{ client }}" class="form-control"
-           id="client" placeholder="Client"
-           onkeydown="if(event.key==='Enter'){this.form.submit();}">
-    <label for="client">🔎 Client</label>
-  </div>
-</div>
-{% endif %}
+    <!-- Client (admin uniquement) -->
+    {% if current_user.role == 'admin' %}
+    <div class="col-md-3">
+      <label for="client" class="form-label small">🏢 Client</label>
+      <input type="text" name="client" value="{{ client }}" id="client"
+             class="form-control form-control-sm"
+             placeholder="Client"
+             onkeydown="if(event.key==='Enter'){this.form.submit();}">
+    </div>
+    {% endif %}
 
-    <!-- Filtre produit -->
-    <div class="col-md">
-      <div class="form-floating">
-        <input type="text" name="product" value="{{ product }}" class="form-control"
-               id="product" placeholder="Produit"
-               onkeydown="if(event.key==='Enter'){this.form.submit();}">
-        <label for="product">🔎 Produit</label>
-      </div>
+    <!-- Produit -->
+    <div class="col-md-3">
+      <label for="product" class="form-label small">📦 Produit</label>
+      <input type="text" name="product" value="{{ product }}" id="product"
+             class="form-control form-control-sm"
+             placeholder="Produit"
+             onkeydown="if(event.key==='Enter'){this.form.submit();}">
     </div>
 
     <!-- Bouton -->
-    <div class="col-md-auto d-flex align-items-stretch">
-      <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-sm btn-primary w-100">Filtrer</button>
     </div>
-
   </div>
 </form>
 
-<div class="card shadow-sm">
-  <div class="card-body">
+<!-- 📋 Tableau des livraisons -->
+<div class="card widget" id="deliveryCard">
+  <div class="card-body p-2">
     <div class="table-responsive">
-      <table class="table table-striped align-middle table-bordered">
-        <thead class="table-dark">
+      <table class="table table-dark table-compact table-striped table-borderless align-middle">
+        <thead>
           <tr>
             <th>NL</th>
             {% if current_user.role == 'admin' %}
               <th>Client</th>
             {% endif %}
             <th>Produit</th>
-            <th>Quantité</th>
-            <th>Date livraison</th>
+            <th class="text-end">Quantité</th>
+            <th>Date</th>
             <th>Observation</th>
           </tr>
         </thead>
@@ -77,24 +73,28 @@
               <td>{{ d.client }}</td>
             {% endif %}
             <td>{{ d.produit }}</td>
-            <td>{{ d.qte }}</td>
-            <td>{{ d.date_livraison }}</td>
-            <td>{{ d.observation }}</td>
+            <td class="text-end">{{ d.qte }}</td>
+            <td>
+              {% if d.date_livraison %}
+                {{ d.date_livraison.strftime('%d/%m/%Y') if d.date_livraison.__class__.__name__ != 'str' else d.date_livraison }}
+              {% endif %}
+            </td>
+            <td class="observation-cell" title="{{ d.observation }}">{{ d.observation }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
 
-    <p class="text-muted mt-2 text-center">
+    <p class="text-muted mt-2 text-center small">
       Affichage {{ start }} – {{ end }} sur {{ total_delivery }} livraisons
     </p>
 
-    <!-- Pagination externalisée -->
+    {# Pagination avec ancre #}
     {% set endpoint = 'delivery' %}
     {% set params = {'period': period, 'client': client, 'product': product} %}
+    {% set target_anchor = 'deliveryCard' %}
     {% include 'pagination.html' %}
-
   </div>
 </div>
 

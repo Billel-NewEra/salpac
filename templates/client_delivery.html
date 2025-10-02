@@ -2,43 +2,56 @@
 {% block title %}Livraisons – {{ client.company_name }}{% endblock %}
 {% block content %}
 
-<h2 class="mb-4">🚚 Livraisons du client « {{ client.company_name }} »</h2>
+<h4 class="mb-3">🚚 Livraisons du client « {{ client.company_name }} »</h4>
 
-<table class="table table-striped align-middle">
-  <thead class="table-dark">
-    <tr>
-      <th>NL</th>
-      <th>Produit</th>
-      <th>Quantité</th>
-      <th>Montant</th>
-      <th>Date</th>
-      <th>Facture</th>
-      <th>Observation</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for d in delivery %}
-    <tr>
-      <td>{{ d.nl }}</td>
-      <td>{{ d.produit }}</td>
-      <td>{{ d.qte }}</td>
-      <td>{{ d.montant }}</td>
-      <td>{{ d.date_livraison }}</td>
-      <td>{{ d.facture }}</td>
-      <td>{{ d.observation }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="card widget" id="clientDeliveryCard">
+  <div class="card-body p-2">
+    <div class="table-responsive">
+      <table class="table table-dark table-compact table-striped table-borderless align-middle">
+        <thead>
+          <tr>
+            <th>NL</th>
+            <th>Produit</th>
+            <th class="text-end">Quantité</th>
+            <th class="text-end">Montant</th>
+            <th>Date</th>
+            <th>Facture</th>
+            <th>Observation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in delivery %}
+          <tr>
+            <td>{{ d.nl }}</td>
+            <td>{{ d.produit }}</td>
+            <td class="text-end">{{ d.qte }}</td>
+            <td class="text-end">{{ d.montant }}</td>
+            <td>
+              {% if d.date_livraison %}
+                {{ d.date_livraison.strftime('%d/%m/%Y') if d.date_livraison.__class__.__name__ != 'str' else d.date_livraison }}
+              {% endif %}
+            </td>
+            <td>{{ d.facture }}</td>
+            <td class="observation-cell" title="{{ d.observation }}">{{ d.observation }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
-<p class="text-muted text-center">
-  Affichage {{ start }} – {{ end }} sur {{ total_delivery }} livraisons
-</p>
+    <p class="text-muted mt-2 text-center small">
+      Affichage {{ start }} – {{ end }} sur {{ total_delivery }} livraisons
+    </p>
 
-{% set endpoint = 'client_delivery' %}
-{% set params = {'client_id': client.id} %}
-{% include 'pagination.html' %}
+    {% set endpoint = 'client_delivery' %}
+    {% set params = {'client_id': client.id} %}
+    {% set target_anchor = 'clientDeliveryCard' %}
+    {% include 'pagination.html' %}
 
-<a href="{{ url_for('clients') }}" class="btn btn-outline-secondary mt-3">⬅️ Retour à tous les clients</a>
+    <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary mt-3">
+      ⬅️ Retour à tous les clients
+    </a>
+  </div>
+</div>
 
 {% endblock %}

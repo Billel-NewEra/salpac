@@ -159,7 +159,7 @@ def clients():
     conn = get_db_connection()
 
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = 9
 
     clients_list = conn.execute(
         """
@@ -197,7 +197,7 @@ def orders():
     conn = get_db_connection()
 
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = 9
     period = request.args.get("period", "all")
     status = request.args.get("status", "all")
     client = request.args.get("client", "").strip()
@@ -323,7 +323,7 @@ def client_orders(client_id):
         return redirect(url_for("orders"))
 
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = 9
 
     orders_list = conn.execute(
         """
@@ -366,7 +366,7 @@ def delivery():
     conn = get_db_connection()
 
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = 9
     period = request.args.get("period", "all")
     client = request.args.get("client", "").strip()
     product = request.args.get("product", "").strip()
@@ -481,7 +481,7 @@ def client_delivery(client_id):
         return redirect(url_for("delivery"))
 
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = 9
 
     delivery_list = conn.execute(
         """
@@ -525,7 +525,7 @@ def order_delivery(order_id):
     conn = get_db_connection()
 
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = 9
     from_client = request.args.get("from_client")
 
     delivery_list = conn.execute(
@@ -650,4 +650,4 @@ def delete_user(user_id):
     return redirect(url_for("list_users"))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=8888)

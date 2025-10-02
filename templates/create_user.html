@@ -2,39 +2,48 @@
 {% block title %}Créer un utilisateur{% endblock %}
 {% block content %}
 
-<h2 class="mb-4"><i class="bi bi-person-plus-fill me-1 text-admin-connexion"></i> Créer un compte client</h2>
+<h4 class="mb-3">
+  <i class="bi bi-person-plus-fill me-1 text-admin-connexion"></i> 
+  Créer un compte client
+</h4>
 
-<div class="card shadow-sm">
-  <div class="card-body">
+<div class="card widget">
+  <div class="card-body p-3">
+
     <form method="POST">
 
-      <!-- Client associé AVANT -->
-      <div class="mb-3">
-        <label for="client_id" class="form-label">Client associé</label>
-        <select name="client_id" id="client_id" class="form-select" required>
-          <option value="">-- Choisir un client --</option>
-          {% for c in clients %}
-            <option value="{{ c.id }}">{{ c.company_name }}</option>
-          {% endfor %}
-        </select>
+      <!-- Première ligne : Client associé -->
+      <div class="row mb-3 justify-content-center">
+        <div class="col-md-6">
+          <label for="client_id" class="form-label small text-light">🏢 Client associé</label>
+          <select name="client_id" id="client_id" class="form-select form-select-sm spike-input" required>
+            <option value="">-- Choisir un client --</option>
+            {% for c in clients %}
+              <option value="{{ c.id }}">{{ c.company_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
 
-      <!-- Nom d'utilisateur -->
-      <div class="mb-3">
-        <label for="username" class="form-label">Nom d'utilisateur</label>
-        <input type="text" name="username" id="username" class="form-control" required>
-      </div>
-
-      <!-- Mot de passe -->
-      <div class="mb-3">
-        <label for="password" class="form-label">Mot de passe</label>
-        <input type="password" name="password" id="password" class="form-control" required>
+      <!-- Deuxième ligne : Username + Password -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label for="username" class="form-label small text-light">👤 Nom d'utilisateur</label>
+          <input type="text" name="username" id="username" class="form-control form-control-sm spike-input" required>
+        </div>
+        <div class="col-md-6">
+          <label for="password" class="form-label small text-light">🔑 Mot de passe</label>
+          <input type="password" name="password" id="password" class="form-control form-control-sm spike-input" required>
+        </div>
       </div>
 
       <!-- Boutons -->
-      <button type="submit" class="btn btn-primary">Créer le compte</button>
-      <a href="{{ url_for('list_users') }}" class="btn btn-outline-secondary">Annuler</a>
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <a href="{{ url_for('list_users') }}" class="btn btn-outline-secondary btn-sm">Annuler</a>
+        <button type="submit" class="btn btn-primary btn-sm">Créer le compte</button>
+      </div>
     </form>
+
   </div>
 </div>
 
@@ -45,17 +54,55 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
+<!-- Spike custom style -->
+<style>
+  .form-label.text-light { color: #E2E8F0 !important; }
+
+  .spike-input {
+    background-color: #1E2746 !important;
+    color: #F1F5FF !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    border-radius: 6px !important;
+    font-size: 0.85rem !important;
+    height: 34px !important;
+  }
+  .spike-input:focus {
+    border-color: #5D87FF !important;
+    box-shadow: 0 0 0 2px rgba(93,135,255,0.25) !important;
+  }
+
+  .select2-container .select2-selection--single {
+    background-color: #1E2746 !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    border-radius: 6px !important;
+    height: 34px !important;
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem !important;
+    color: #F1F5FF !important;
+  }
+  .select2-container--default .select2-selection__rendered {
+    color: #F1F5FF !important;
+  }
+  .select2-dropdown {
+    background-color: #1E2746 !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    color: #E2E8F0 !important;
+  }
+  .select2-results__option--highlighted {
+    background-color: #5D87FF !important;
+    color: white !important;
+  }
+</style>
+
 <script>
   $(document).ready(function () {
-    // Activer Select2
     $('#client_id').select2({
       placeholder: "🔍 Rechercher un client...",
       allowClear: true,
-      width: '100%',
-      minimumResultsForSearch: 0  // force la recherche même si peu d'options
+      width: '100%'
     });
 
-    // Hack pour que le curseur tombe direct dans la recherche quand on clique
     $('#client_id').on('select2:open', function () {
       document.querySelector('.select2-container--open .select2-search__field').focus();
     });

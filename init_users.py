@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   username      TEXT    NOT NULL UNIQUE,
   password_hash TEXT    NOT NULL,
-  role          TEXT    NOT NULL CHECK (role IN ('admin','client')),
+  role          TEXT    NOT NULL CHECK (role IN ('Admin','client')),
   client_id     INTEGER,
   is_active     INTEGER NOT NULL DEFAULT 1,
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -29,11 +29,11 @@ def ensure_schema(conn):
 def upsert_admin(conn, username, password):
     cur = conn.execute("SELECT id FROM users WHERE username = ?", (username,))
     if cur.fetchone():
-        print(f"[OK] L'utilisateur admin '{username}' existe déjà.")
+        print(f"[OK] L'utilisateur Admin '{username}' existe déjà.")
         return
     pwd_hash = generate_password_hash(password)
     conn.execute(
-        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'admin')",
+        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'Admin')",
         (username, pwd_hash),
     )
     conn.commit()
@@ -42,7 +42,7 @@ def upsert_admin(conn, username, password):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default=DEFAULT_DB, help="Chemin vers la base SQLite")
-    ap.add_argument("--username", default="admin", help="Nom d'utilisateur admin")
+    ap.add_argument("--username", default="MobiBenz", help="Nom d'utilisateur admin")
     ap.add_argument("--password", help="Mot de passe admin (sinon, demande interactive)")
     args = ap.parse_args()
 
