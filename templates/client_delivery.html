@@ -39,7 +39,7 @@
       </table>
     </div>
 
-    <p class="text-muted mt-2 text-center small">
+    <p class="text-secondary mt-2 text-center small">
       Affichage {{ start }} – {{ end }} sur {{ total_delivery }} livraisons
     </p>
 
@@ -48,8 +48,8 @@
     {% set target_anchor = 'clientDeliveryCard' %}
     {% include 'pagination.html' %}
 
-    <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary mt-3">
-      ⬅️ Retour à tous les clients
+    <a href="{{ url_for('clients') }}" class="btn-return-circle mt-3" title="Retour">
+      <i class="bi bi-arrow-left"></i>
     </a>
   </div>
 </div>

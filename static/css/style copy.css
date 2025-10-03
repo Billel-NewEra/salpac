@@ -327,7 +327,34 @@ body {
   padding: 0.3em 0.5em;
 }
 
+/* Réduit légèrement la taille globale de la table */
+#ordersCard .table {
+  font-size: 0.82rem;
+  border-radius: 12px;
+  overflow: hidden;
+}
 
+/* Ligne d'entête plus compacte et contrastée */
+#ordersCard thead th {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  background: rgba(255,255,255,0.04);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Cellules du corps */
+#ordersCard tbody td {
+  padding: 0.35rem 0.55rem;
+  vertical-align: middle;
+}
+
+/* Réduction du bouton Actions */
+#ordersCard .btn-subtle {
+  padding: 0.2rem 0.35rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+}
 
 /* Pagination plus compacte */
 .pagination .page-link {
@@ -452,205 +479,4 @@ body {
 #deliveryCard tbody td {
   padding: 0.35rem 0.55rem;
   vertical-align: middle;
-}
-
-/* Uniformisation des tables principales */
-#ordersCard .table,
-#deliveryCard .table,
-.card.widget .table { /* client table = card générique */
-  font-size: 0.82rem;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-#ordersCard thead th,
-#deliveryCard thead th,
-.card.widget thead th {
-  padding: 0.4rem 0.6rem;
-  font-size: 0.8rem;
-  background: rgba(255,255,255,0.04);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-#ordersCard tbody td,
-#deliveryCard tbody td,
-.card.widget tbody td {
-  padding: 0.35rem 0.55rem;
-  vertical-align: middle;
-}
-
-/* ===== Tables uniformisées ===== */
-.table-dark {
-  --bs-table-bg: transparent;
-  --bs-table-color: var(--text);
-  --bs-table-striped-bg: rgba(255, 255, 255, .02);
-  --bs-table-striped-color: var(--text);
-  --bs-table-hover-bg: rgba(255, 255, 255, .04);
-  --bs-table-hover-color: var(--text-strong);
-  color: var(--text);
-}
-
-.table thead th {
-  color: var(--text-strong);
-  padding: 0.4rem 0.6rem;
-  font-size: 0.8rem;
-  background: rgba(255,255,255,0.04);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.table tbody td {
-  padding: 0.35rem 0.55rem;
-  font-size: 0.82rem;
-  vertical-align: middle;
-}
-
-.table-compact th,
-.table-compact td {
-  padding: 0.35rem 0.5rem;
-  font-size: 0.85rem;
-}
-
-.table-compact .badge {
-  font-size: 0.7rem;
-  padding: 0.3em 0.5em;
-}
-
-.table-dark tbody tr:hover {
-  background: rgba(255, 255, 255, 0.06);
-  cursor: pointer;
-}
-
-.table-responsive table {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-/* Alignement universel */
-.table th.text-end,
-.table td.text-end { text-align: right !important; }
-.table th.text-center,
-.table td.text-center { text-align: center !important; }
-
-/* Actions */
-.actions-cell {
-  display: inline-flex;
-  gap: 0.25rem;
-  justify-content: center;
-  align-items: center;
-}
-.actions-cell .btn-subtle {
-  padding: 0.25rem 0.4rem;
-  font-size: 0.8rem;
-  border-radius: 6px;
-}
-
-.btn-return-circle {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--text-strong);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.25s ease-in-out;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-
-.btn-return-circle:hover {
-  background: linear-gradient(135deg, var(--primary), var(--cyan));
-  color: #fff;
-  transform: translateX(-3px) scale(1.05);
-  box-shadow: 0 4px 12px rgba(93,135,255,0.5);
-}
-
-.btn-return-circle i {
-  font-size: 1.2rem;
-}
-
-
-/* Inputs uniformisés pour creation d'utilisateurs */
-.spike-input {
-  background-color: #1E2746 !important;
-  color: #F1F5FF !important;
-  border: 1px solid rgba(255,255,255,0.15) !important;
-  border-radius: 8px !important;
-  font-size: 0.9rem !important;
-  height: 38px !important;
-}
-.spike-input:focus {
-  border-color: #49BEFF !important;
-  box-shadow: 0 0 0 3px rgba(93,135,255,0.35) !important;
-}
-
-/* Bouton annuler */
-.btn-cancel {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: #ccc;
-  border-radius: 8px;
-  padding: 0.4rem 0.9rem;
-  transition: all 0.25s;
-}
-.btn-cancel:hover {
-  background: rgba(239,68,68,0.15);
-  border-color: #dc3545;
-  color: #ff6b6b;
-  transform: scale(1.05);
-}
-
-/* Bouton créer */
-.btn-create {
-  background: linear-gradient(135deg, #5D87FF, #49BEFF);
-  border: none;
-  color: #fff;
-  border-radius: 8px;
-  font-weight: 600;
-  padding: 0.4rem 1.2rem;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
-  transition: all 0.3s ease-in-out;
-}
-.btn-create:hover {
-  transform: scale(1.07);
-  box-shadow: 0 6px 16px rgba(93,135,255,0.55);
-}
-
-
-/* === Bouton Annuler (icône uniquement) === */
-.btn-cancel-icon {
-  width: 40px; height: 40px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #94A3B8;
-  font-size: 1.2rem;
-  transition: all 0.25s ease-in-out;
-}
-.btn-cancel-icon:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #EF4444;
-  color: #EF4444;
-  transform: translateY(-2px);
-}
-
-/* === Bouton Créer (icône uniquement) === */
-.btn-create-icon {
-  width: 40px; height: 40px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #5D87FF, #7C3AED);
-  border: none;
-  color: #fff;
-  font-size: 1.2rem;
-  box-shadow: 0 3px 8px rgba(93, 135, 255, 0.35);
-  transition: all 0.25s ease-in-out;
-}
-.btn-create-icon:hover {
-  background: linear-gradient(135deg, #7C3AED, #5D87FF);
-  box-shadow: 0 5px 12px rgba(93, 135, 255, 0.5);
-  transform: translateY(-2px);
 }

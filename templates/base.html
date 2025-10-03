@@ -42,23 +42,23 @@
           <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
             <i class="bi bi-speedometer2 me-2"></i> Dashboard
           </a>
-          {% if current_user.role == 'Admin' %}
+          {% if current_user.role == 'admin' %}
           <a class="nav-link {% if request.endpoint == 'clients' %}active{% endif %}" href="{{ url_for('clients') }}">
             <i class="bi bi-people-fill me-2"></i> Clients
           </a>
           {% endif %}
           <a class="nav-link {% if request.endpoint == 'orders' %}active{% endif %}" href="{{ url_for('orders') }}">
             <i class="bi bi-box-seam me-2"></i>
-            {% if current_user.role == 'Admin' %}Commandes{% else %}Mes commandes{% endif %}
+            {% if current_user.role == 'admin' %}Commandes{% else %}Mes commandes{% endif %}
           </a>
           <a class="nav-link {% if request.endpoint == 'delivery' %}active{% endif %}" href="{{ url_for('delivery') }}">
             <i class="bi bi-truck me-2"></i>
-            {% if current_user.role == 'Admin' %}Livraisons{% else %}Mes livraisons{% endif %}
+            {% if current_user.role == 'admin' %}Livraisons{% else %}Mes livraisons{% endif %}
           </a>
         </nav>
 
         <!-- ADMINISTRATION -->
-        {% if current_user.role == 'Admin' %}
+        {% if current_user.role == 'admin' %}
         <div class="sidebar-section px-3">Administration</div>
         <nav class="nav flex-column px-2">
           <a class="nav-link {% if request.endpoint == 'list_users' %}active{% endif %}" href="{{ url_for('list_users') }}">
