@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>🔥 Heatmap Glow Strong – Cyber Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at 25% 25%, #0a0f1f, #050a15 70%);
+      color: #e6eef8;
+      font-family: "Poppins", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .chart-card {
+      background: rgba(14, 18, 32, 0.8);
+      border: 1px solid rgba(56,189,248,0.3);
+      border-radius: 20px;
+      box-shadow: 0 0 25px rgba(139,92,246,0.4), inset 0 0 12px rgba(56,189,248,0.25);
+      padding: 2rem;
+      width: 720px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      background: radial-gradient(circle at 50% 50%, rgba(139,92,246,0.25), rgba(56,189,248,0.15), transparent 80%);
+      z-index: 0;
+      animation: glowShift 6s infinite alternate ease-in-out;
+    }
+
+    @keyframes glowShift {
+      from { opacity: 0.5; transform: scale(1); }
+      to { opacity: 0.8; transform: scale(1.05); }
+    }
+
+    .chart-title {
+      font-weight: 600;
+      color: #cbd5e1;
+      text-align: center;
+      margin-bottom: 1.2rem;
+      font-size: 1.1rem;
+      text-shadow: 0 0 8px rgba(56,189,248,0.5);
+      z-index: 1;
+      position: relative;
+    }
+
+    .apexcharts-heatmap-rect {
+      filter: drop-shadow(0 0 6px rgba(56,189,248,0.4));
+      transition: all 0.3s ease;
+    }
+    .apexcharts-heatmap-rect:hover {
+      filter: drop-shadow(0 0 16px rgba(139,92,246,0.8));
+      transform: scale(1.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="chart-card">
+    <div class="chart-title">🚀 Activité Hebdomadaire (Glow Fort)</div>
+    <div id="heatmapStrong"></div>
+  </div>
+
+  <script>
+    const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+    const weeks = ['S40', 'S41', 'S42', 'S43'];
+    const data = [
+      [5, 12, 24, 38, 42, 20, 8],
+      [3, 15, 28, 36, 41, 25, 10],
+      [2, 18, 32, 44, 40, 22, 5],
+      [7, 20, 26, 35, 48, 30, 15]
+    ];
+
+    const series = weeks.map((w, i) => ({
+      name: w,
+      data: days.map((d, j) => ({ x: d, y: data[i][j] }))
+    }));
+
+    new ApexCharts(document.querySelector("#heatmapStrong"), {
+      chart: { type: 'heatmap', height: 350, toolbar: { show: false }, background: 'transparent' },
+      series,
+      plotOptions: {
+        heatmap: {
+          shadeIntensity: 0.9,
+          radius: 8,
+          colorScale: {
+            ranges: [
+              { from: 0, to: 5, color: '#0f172a' },
+              { from: 6, to: 15, color: '#0891b2' },
+              { from: 16, to: 30, color: '#06b6d4' },
+              { from: 31, to: 50, color: '#a855f7' }
+            ]
+          }
+        }
+      },
+      dataLabels: { enabled: false },
+      xaxis: { categories: days, labels: { style: { colors: '#aeb5cc' } } },
+      yaxis: { labels: { style: { colors: '#aeb5cc' } } },
+      grid: { borderColor: 'rgba(255,255,255,0.05)' },
+      legend: { position: 'bottom', labels: { colors: '#aeb5cc' } },
+      tooltip: { theme: 'dark', y: { formatter: v => `${v} commandes` } }
+    }).render();
+  </script>
+</body>
+</html>

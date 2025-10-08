@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>⚙️ Heatmap Glow Adaptatif – NovoPrint Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at 20% 20%, #0b1220, #090e1a 60%, #070b14);
+      color: #e6eef8;
+      font-family: "Inter", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .chart-card {
+      position: relative;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border-radius: 18px;
+      padding: 1.8rem;
+      width: 720px;
+      transition: all 0.6s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .chart-title {
+      font-weight: 600;
+      color: #cbd5e1;
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      z-index: 1;
+      position: relative;
+    }
+
+    /* 🌙 Mode Glow Doux */
+    .chart-card.soft {
+      box-shadow: 0 0 22px rgba(56,189,248,0.18);
+    }
+
+    .chart-card.soft::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      background: radial-gradient(circle at 50% 50%, rgba(56,189,248,0.06), transparent 75%);
+      z-index: -1;
+      transition: all 0.6s ease;
+    }
+
+    /* ⚡ Mode Glow Fort */
+    .chart-card.strong {
+      border: 1px solid rgba(139,92,246,0.4);
+      box-shadow: 0 0 40px rgba(139,92,246,0.45), inset 0 0 10px rgba(56,189,248,0.3);
+    }
+
+    .chart-card.strong::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      background: radial-gradient(circle at 50% 50%, rgba(139,92,246,0.25), rgba(56,189,248,0.15), transparent 80%);
+      animation: glowShift 6s infinite alternate ease-in-out;
+      z-index: 0;
+    }
+
+    @keyframes glowShift {
+      from { opacity: 0.6; transform: scale(1); }
+      to { opacity: 0.9; transform: scale(1.05); }
+    }
+
+    .apexcharts-legend-text { color: #aeb5cc !important; font-size: 13px !important; }
+  </style>
+</head>
+<body>
+  <div id="chartContainer" class="chart-card soft">
+    <div class="chart-title">🧠 Activité Hebdomadaire – Mode Adaptatif</div>
+    <div id="heatmapAdaptive"></div>
+  </div>
+
+  <script>
+    const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+    const weeks = ['S40', 'S41', 'S42', 'S43'];
+    const data = [
+      [5, 12, 24, 38, 42, 20, 8],
+      [3, 15, 28, 36, 41, 25, 10],
+      [2, 18, 32, 44, 40, 22, 5],
+      [7, 20, 26, 35, 48, 30, 15]
+    ];
+
+    const series = weeks.map((w, i) => ({
+      name: w,
+      data: days.map((d, j) => ({ x: d, y: data[i][j] }))
+    }));
+
+    const chartContainer = document.getElementById("chartContainer");
+    const allValues = data.flat();
+    const avg = allValues.reduce((a,b)=>a+b,0) / allValues.length;
+
+    // 🌡️ Détecte l’intensité de l’activité
+    if (avg > 30) {
+      chartContainer.classList.remove("soft");
+      chartContainer.classList.add("strong");
+    }
+
+    // 💡 Chart Apex
+    new ApexCharts(document.querySelector("#heatmapAdaptive"), {
+      chart: { type: 'heatmap', height: 350, toolbar: { show: false }, background: 'transparent' },
+      series,
+      plotOptions: {
+        heatmap: {
+          radius: 6,
+          shadeIntensity: 0.8,
+          colorScale: {
+            ranges: [
+              { from: 0, to: 5, color: '#1e293b' },
+              { from: 6, to: 15, color: '#0ea5e9' },
+              { from: 16, to: 30, color: '#06b6d4' },
+              { from: 31, to: 50, color: '#a855f7' }
+            ]
+          }
+        }
+      },
+      dataLabels: { enabled: false },
+      xaxis: { categories: days, labels: { style: { colors: '#aeb5cc' } } },
+      yaxis: { labels: { style: { colors: '#aeb5cc' } } },
+      grid: { borderColor: 'rgba(255,255,255,0.05)' },
+      legend: { position: 'bottom', labels: { colors: '#aeb5cc' } },
+      tooltip: { theme: 'dark', y: { formatter: v => `${v} commandes` } }
+    }).render();
+  </script>
+</body>
+</html>

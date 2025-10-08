@@ -8,6 +8,8 @@
   --primary: #5D87FF;
   --cyan: #49BEFF;
   --amber: #E9B949;
+  --kpi-clients: #8b5cf6;
+  --kpi-delivery: #f59e0b; /* orange doré */
 }
 
 * { box-sizing: border-box; }
@@ -63,7 +65,7 @@ body {
   z-index: 1;
 }
 .topbar {
-  background: rgba(12, 20, 39, 0.8);
+  background: rgba(67, 43, 27, 0.8);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   height: 64px;
@@ -234,7 +236,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #fff;
+  /* color: #fff; */
   min-height: 120px;
 }
 .tile.primary { background: linear-gradient(180deg, #5D87FF 0%, #3353d6 100%); }
@@ -653,4 +655,386 @@ body {
   background: linear-gradient(135deg, #7C3AED, #5D87FF);
   box-shadow: 0 5px 12px rgba(93, 135, 255, 0.5);
   transform: translateY(-2px);
+}
+
+/* ===== Dropdown user : ouverture au survol/focus ===== */
+.user-menu { position: relative; }
+
+.user-menu .dropdown-menu {
+  display: block;               /* nécessaire pour pilotage via opacity/visibility */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity .15s ease, transform .15s ease, visibility 0s .15s;
+  right: 0; left: auto;         /* garder l’alignement à droite */
+  margin-top: 8px;              /* espace visuel; évite le “trou” qui casse le hover */
+  z-index: 2000;                /* tu l’avais déjà, on s’assure qu’il passe devant */
+  background: rgba(30,39,70,0.6);
+}
+
+.user-menu:hover .dropdown-menu,
+.user-menu:focus-within .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition: opacity .15s ease, transform .15s ease, visibility 0s;
+}
+
+/* Empêche la petite flèche/caret par défaut si Bootstrap l’ajoute ailleurs */
+.user-menu .dropdown-toggle::after { display: none; }
+
+/* Corrige alignement menu utilisateur avec avatar */
+.user-menu .dropdown-menu {
+  margin-top: 0 !important;           /* supprime l’écart par défaut */
+  top: 100% !important;               /* colle juste en dessous de l’avatar */
+  left: 50% !important;               /* aligne horizontalement avec avatar */
+  transform: translateX(-50%) !important; /* centre parfaitement */
+  min-width: 180px;                   /* largeur fixe pour éviter flottement */
+}
+
+/* Ajuste l’ancrage par rapport à la topbar */
+.topbar .user-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Hover = ouverture (on force l’affichage au survol) */
+.user-menu:hover .dropdown-menu {
+  display: block;
+}
+
+
+/* ===== Login Page ===== */
+
+.login-card .input-group-text {
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px 0 0 12px;
+}
+
+
+/* Login Card */
+.login-card {
+  background: rgba(30, 39, 70, 0.95);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  max-width: 400px; /* largeur fixe */
+  width: 100%;
+}
+
+/* Inputs */
+.login-card .form-control {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text-strong);
+}
+.login-card .form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.2rem rgba(93,135,255,0.25);
+  color: #fff;
+}
+
+/* Bouton */
+.login-card .btn-primary {
+  background: linear-gradient(135deg, #5D87FF 0%, #7C3AED 100%);
+  border: none;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 0.6rem;
+  box-shadow: 0 4px 12px rgba(93,135,255,0.45);
+  transition: all 0.25s ease-in-out;
+}
+.login-card .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(93,135,255,0.55);
+}
+
+/* Flash messages en overlay */
+.flash-overlay {
+  position: fixed;          /* reste fixe par-dessus la page */
+  top: 20px;                /* espace depuis le haut */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3000;            /* au-dessus de tout */
+  min-width: 300px;
+  max-width: 90%;
+  opacity: 0.95;            /* légèrement transparent */
+  border-radius: 12px;
+}
+
+
+/* 
+********************************************
+Style du Dashboard
+********************************************
+*/
+
+
+/* Client actifs */
+
+.tile2 {
+  position: relative;
+  background: linear-gradient(180deg, rgba(139,92,246,.12), transparent);
+  
+  border-radius: 14px;
+  padding: 0.8rem 1.6rem;
+  color: #e6eef8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 18px rgba(139,92,246,.12);
+  min-height: 100px;
+  /* 💎 le contour qui disparaît */
+  -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.tile2::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 15%;
+  background: linear-gradient(to bottom, transparent, rgba(11,18,32,0.5));
+  border-radius: 0 0 14px 14px;
+  pointer-events: none;
+}
+
+.tile2 .tile-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.tile2 .tile-title {
+  color: #aeb5cc;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.tile2 .tile-value {
+  color: var(--kpi-clients);  /* couleur violette */
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.tile2 .tile-sub {
+  color: #aeb5cc;
+  font-size: 0.88rem;
+}
+
+.tile2 .tile-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.08);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.08);
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  color: var(--kpi-clients);
+}
+
+/* COmmandes */
+.commandes-card {
+  background: var(--bg-card) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35) !important;
+}
+
+.commande-dot {
+  display: inline-block;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-encours   { background: #E9B949; }  /* Jaune */
+.dot-livraison { background: #49BEFF; }  /* Bleu */
+.dot-livree    { background: #22c55e; }  /* Vert */
+
+/* --- Ajout couleur bleue subtile (comme Spike) --- */
+
+
+.text-indigo {
+  color: #49BEFF !important; /* ton bleu personnalisé */
+}
+
+.bg-indigo-subtle {
+  background-color: rgba(73, 190, 255, 0.15) !important;
+}
+
+.tile-command .fw-semibold {
+  color: #aeb5cc;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+}
+
+.command-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* espace entre l’icône et le texte */
+}
+
+.command-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* centre parfaitement les deux lignes par rapport à l’icône */
+  line-height: 1.2;
+}
+
+.command-text .fw-bold {
+  font-size: 1rem;
+}
+
+.command-text .small {
+  color: #aeb5cc;
+}
+
+.tile-command {
+  
+  background: linear-gradient(180deg, rgba(92, 159, 246, 0.12), transparent);
+  border-radius: 14px;
+  padding: 18px 20px;
+  color: #e6eef8;
+  justify-content: space-between;
+  box-shadow: 0 6px 18px rgba(139,92,246,.12);
+  min-height: 100px;
+  /* 💎 le contour qui disparaît */
+  -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+/* --- Bord inférieur qui s’efface en douceur --- */
+.tile-command::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, rgba(59,130,246,0) 0%, rgba(59,130,246,0.08) 100%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* CSS Livraisons */
+.tile-delivery {
+  position: relative;
+  background: linear-gradient(180deg, rgba(245,158,11,.12), transparent);
+  
+  border-radius: 14px;
+  padding: 1rem 1.4rem;
+  color: #e6eef8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 18px rgba(245,158,11,.12);
+
+  /* 👇 Effet de disparition du contour */
+  -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.tile-delivery .tile-title {
+  color: #aeb5cc;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.tile-sub {
+  color: #aeb5cc;
+  font-size: 0.88rem;
+}
+
+.tile-delivery .tile-value {
+  color: var(--kpi-delivery);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.tile-delivery .tile-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.08);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.08);
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  color: var(--kpi-delivery);
+}
+
+/* === Carte du graphique (intégrée au thème) === */
+.chart-card {
+  position: relative;
+  background: linear-gradient(180deg, rgba(73,190,255,.10), transparent);
+  border: none;
+  border-radius: 14px;
+  padding: 1.2rem 1.5rem;
+  color: #e6eef8;
+  box-shadow: 0 6px 18px rgba(73,190,255,.10);
+  transition: transform .2s ease;
+  -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 85%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.chart-card:hover {
+  transform: scale(1.015);
+  box-shadow: 0 0 20px rgba(73,190,255,.25);
+}
+
+.chart-card::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20%;
+  background: linear-gradient(to bottom, transparent, rgba(11,18,32,0.5));
+  border-radius: 0 0 14px 14px;
+  pointer-events: none;
+}
+
+.chart-title {
+  font-weight: 600;
+  color: #aeb5cc;
+  margin-bottom: .8rem;
+  text-align: center;
+}
+
+
+/* 💙 Personnalisation du fond du tooltip ApexCharts */
+.apexcharts-tooltip {
+  background: #1E2A48 !important;   /* ton bleu foncé */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #e6eef8 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Harmonise le titre et le texte à l’intérieur */
+.apexcharts-tooltip-title {
+  background: #1E2A48 !important;
+  color: #aeb5cc !important;
+  border-bottom: 1px solid rgba(255,255,255,0.1) !important;
 }

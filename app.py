@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import sqlite3
 from datetime import datetime, timedelta
 from flask_login import (
@@ -15,6 +15,7 @@ app.secret_key = "change_this_to_a_real_secret_key"
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"  # si accès non autorisé → /login
+login_manager.login_message = None
 
 # --- Connexion sqlite3 brut ---
 def get_db_connection():
@@ -47,6 +48,70 @@ def get_user_by_username(username):
         return User(row["id"], row["username"], row["password_hash"], row["role"], row["client_id"])
     return None
 
+def get_weekly_activity():
+    conn = get_db_connection()
+
+    # --- Sélection selon le rôle de l'utilisateur ---
+    if current_user.role == "admin":
+        query = """
+            SELECT 
+                strftime('%W', date_reservation) AS week,
+                strftime('%w', date_reservation) AS weekday,
+                COUNT(*) AS count
+            FROM orders
+            WHERE date_reservation IS NOT NULL
+            GROUP BY week, weekday
+            ORDER BY week ASC, weekday ASC
+        """
+        params = ()
+    else:
+        # Récupérer le nom de l’entreprise du client connecté
+        row = conn.execute(
+            "SELECT Entreprise FROM client WHERE N = ?", (current_user.client_id,)
+        ).fetchone()
+        if not row:
+            conn.close()
+            return {"weeks": [], "days": [], "data": []}
+        client_name = row["Entreprise"]
+
+        query = """
+            SELECT 
+                strftime('%W', date_reservation) AS week,
+                strftime('%w', date_reservation) AS weekday,
+                COUNT(*) AS count
+            FROM orders
+            WHERE client = ? AND date_reservation IS NOT NULL
+            GROUP BY week, weekday
+            ORDER BY week ASC, weekday ASC
+        """
+        params = (client_name,)
+
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+
+    if not rows:
+        return {"weeks": [], "days": [], "data": []}
+
+    # --- Conversion vers structure utilisable ---
+    weeks = sorted(list({r["week"] for r in rows}))[-4:]  # ✅ seulement les 4 dernières semaines
+    days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+    data = {w: [0] * 7 for w in weeks}
+
+    for r in rows:
+        w = r["week"]
+        if w not in weeks:
+            continue  # ignorer les plus anciennes
+        d = int(r["weekday"])  # 0=Dimanche
+        c = r["count"]
+        data[w][d] = c
+
+    return {
+        "weeks": [f"S{int(w)}" for w in weeks],
+        "days": days,
+        "data": list(data.values())
+    }
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return get_user_by_id(user_id)
@@ -63,7 +128,8 @@ def login():
         user = get_user_by_username(username)
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
-            flash("Connexion réussie ✅", "success")
+            session["welcome"] = True   # ✅ flag toast
+            #flash("Connexion réussie ✅", "success")
             return redirect(url_for("index"))
         else:
             flash("Nom d'utilisateur ou mot de passe incorrect ❌", "danger")
@@ -73,7 +139,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash("Vous être déconnecté maintenant ✅", "info")
+    #flash("Vous êtes déconnecté maintenant ✅", "info")
     return redirect(url_for("login"))
 
 @app.route("/whoami")
@@ -111,6 +177,9 @@ def inject_client_name():
 @login_required
 def index():
     conn = get_db_connection()
+    now = datetime.now()
+    current_month = f"{now.month:02d}"
+    current_year = str(now.year)
 
     # Vue admin → totaux globaux
     if current_user.role == "admin":
@@ -120,6 +189,42 @@ def index():
         orders_encours = conn.execute("SELECT COUNT(*) FROM orders WHERE situation = 'EN COURS'").fetchone()[0]
         orders_livraison = conn.execute("SELECT COUNT(*) FROM orders WHERE situation = 'LIVRAISON'").fetchone()[0]
         total_delivery = conn.execute("SELECT COUNT(*) FROM delivery").fetchone()[0]
+
+        # ✳️ Livraisons du mois en cours
+        new_deliveries = conn.execute("""
+            SELECT COUNT(*) FROM delivery
+            WHERE strftime('%m', date_livraison) = ? AND strftime('%Y', date_livraison) = ?
+        """, (current_month, current_year)).fetchone()[0]
+
+        # 📦 Produits les plus livrés (Top 6)
+        top_products = conn.execute("""
+            SELECT produit, COUNT(*) AS nb_livraisons
+            FROM delivery
+            GROUP BY produit
+            ORDER BY nb_livraisons DESC
+            LIMIT 6
+        """).fetchall()
+
+        products_labels = [row["produit"] for row in top_products]
+        products_counts = [row["nb_livraisons"] for row in top_products]
+        
+        # 📊 Activité par jour de la semaine (commandes par jour)
+        orders_raw = conn.execute("""
+            SELECT 
+                CASE strftime('%w', date_reservation)
+                    WHEN '0' THEN 'Dim'
+                    WHEN '1' THEN 'Lun'
+                    WHEN '2' THEN 'Mar'
+                    WHEN '3' THEN 'Mer'
+                    WHEN '4' THEN 'Jeu'
+                    WHEN '5' THEN 'Ven'
+                    WHEN '6' THEN 'Sam'
+                END AS jour,
+                COUNT(*) AS total
+            FROM orders
+            WHERE situation IS NOT NULL
+            GROUP BY jour
+        """).fetchall()
     else:
         # Vue client → totaux spécifiques à son entreprise
         client = conn.execute("SELECT Entreprise FROM client WHERE N = ?", (current_user.client_id,)).fetchone()
@@ -132,6 +237,42 @@ def index():
             orders_encours = conn.execute("SELECT COUNT(*) FROM orders WHERE client = ? AND situation = 'EN COURS'", (client_name,)).fetchone()[0]
             orders_livraison = conn.execute("SELECT COUNT(*) FROM orders WHERE client = ? AND situation = 'LIVRAISON'", (client_name,)).fetchone()[0]
             total_delivery = conn.execute("SELECT COUNT(*) FROM delivery WHERE client = ?", (client_name,)).fetchone()[0]
+            # ✳️ Livraisons du mois pour ce client uniquement
+            new_deliveries = conn.execute("""
+                SELECT COUNT(*) FROM delivery
+                WHERE client = ? AND strftime('%m', date_livraison) = ? AND strftime('%Y', date_livraison) = ?
+            """, (client_name, current_month, current_year)).fetchone()[0]
+
+            # 📦 Produits les plus livrés (pour ce client uniquement)
+            top_products = conn.execute("""
+                SELECT produit, COUNT(*) AS nb_livraisons
+                FROM delivery
+                WHERE client = ?
+                GROUP BY produit
+                ORDER BY nb_livraisons DESC
+                LIMIT 6
+            """, (client_name,)).fetchall()
+
+            products_labels = [row["produit"] for row in top_products]
+            products_counts = [row["nb_livraisons"] for row in top_products]
+
+            # 📊 Activité par jour de la semaine (commandes par jour)
+            orders_raw = conn.execute("""
+                SELECT 
+                    CASE strftime('%w', date_reservation)
+                        WHEN '0' THEN 'Dim'
+                        WHEN '1' THEN 'Lun'
+                        WHEN '2' THEN 'Mar'
+                        WHEN '3' THEN 'Mer'
+                        WHEN '4' THEN 'Jeu'
+                        WHEN '5' THEN 'Ven'
+                        WHEN '6' THEN 'Sam'
+                    END AS jour,
+                    COUNT(*) AS total
+                FROM orders
+                WHERE client = ? AND situation IS NOT NULL
+                GROUP BY jour
+            """, (client_name,)).fetchall()
         else:
             total_clients = 0
             total_orders = 0
@@ -139,6 +280,66 @@ def index():
             orders_encours = 0
             orders_livraison = 0
             total_delivery = 0
+            new_deliveries = 0
+            products_labels = []
+            products_counts = []
+            orders_raw = []
+
+    # ✅ 1️⃣ Nouveau bloc : nombre de commandes par mois
+    if current_user.role == "admin":
+        rows = conn.execute("""
+            SELECT strftime('%m', date_reservation) AS mois, COUNT(*) AS total
+            FROM orders
+            WHERE date_reservation IS NOT NULL
+            GROUP BY mois
+            ORDER BY mois
+        """).fetchall()
+    else:
+        rows = conn.execute("""
+            SELECT strftime('%m', date_reservation) AS mois, COUNT(*) AS total
+            FROM orders
+            WHERE client = ? AND date_reservation IS NOT NULL
+            GROUP BY mois
+            ORDER BY mois
+        """, (client_name,)).fetchall()
+
+    # ✅ 2️⃣ Convertir en tableau 12 mois
+    months_labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+    monthly_counts = [0] * 12
+    for r in rows:
+        month_index = int(r['mois']) - 1
+        monthly_counts[month_index] = r['total']
+
+    # ✅ 3️⃣ Commandes par client
+    if current_user.role == "admin":
+        rows_clients = conn.execute("""
+            SELECT client, COUNT(*) as total
+            FROM orders
+            WHERE client IS NOT NULL
+            GROUP BY client
+            ORDER BY total DESC
+            LIMIT 6
+        """).fetchall()
+    else:
+        # Si client, on montre ses produits ou rien
+        rows_clients = conn.execute("""
+            SELECT produit, COUNT(*) as total
+            FROM orders
+            WHERE client = ? AND produit IS NOT NULL
+            GROUP BY produit
+            ORDER BY total DESC
+            LIMIT 6
+        """, (client_name,)).fetchall()
+
+    clients_labels = [r['client'] if 'client' in r.keys() else r['produit'] for r in rows_clients]
+    clients_counts = [r['total'] for r in rows_clients]
+    # --- Fallback automatique pour garantir les 7 jours ---
+    orders_dict = {row["jour"]: row["total"] for row in orders_raw}
+    jours_fixes = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
+    days_labels = jours_fixes
+    days_counts = [orders_dict.get(jour, 0) for jour in jours_fixes]
+
+    
 
     conn.close()
 
@@ -149,8 +350,24 @@ def index():
         total_delivery=total_delivery,
         orders_livree=orders_livree,
         orders_encours=orders_encours,
-        orders_livraison=orders_livraison
+        orders_livraison=orders_livraison,
+        new_deliveries=new_deliveries,
+        months=months_labels,
+        monthly_counts=monthly_counts,
+        clients_labels=clients_labels,
+        clients_counts=clients_counts,
+        # ↓↓↓ ajoute ceci ↓↓↓
+        products_labels=products_labels,
+        products_counts=products_counts,
+        days_labels=days_labels,
+        days_counts=days_counts
     )
+
+# ---- Dashboard (graphs) ----
+@app.route('/api/weekly_activity')
+def weekly_activity():
+    return jsonify(get_weekly_activity())
+
 
 # ---- Clients (pagination) ----
 @app.route("/clients")

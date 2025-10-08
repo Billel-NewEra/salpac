@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Répartition des Commandes - Série Premium</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <style>
+    body {
+      background: #0b1220;
+      color: #e6eef8;
+      font-family: "Inter", sans-serif;
+      margin: 0;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .chart-card {
+      background: linear-gradient(180deg, #121a2b 0%, #10182a 100%);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+      transition: transform .2s ease;
+    }
+
+    .chart-card:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 20px rgba(73,190,255,.2);
+    }
+
+    .chart-title {
+      font-weight: 600;
+      color: #aeb5cc;
+      margin-bottom: .5rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+
+
+  <div class="chart-card">
+    <div class="chart-title">🔆 Neon Halo</div>
+    <div id="chart3"></div>
+  </div>
+
+
+  <script>
+    const colors = ['#22C55E', '#E9B949', '#49BEFF'];
+    const labels = ['Livrées', 'En cours', 'En livraison'];
+    const data = [55, 30, 20];
+
+    
+
+    // 3️⃣ Neon Halo Donut
+    new ApexCharts(document.querySelector("#chart3"), {
+      chart: { type: 'donut', background: 'transparent' },
+      series: data,
+      labels,
+      colors,
+      stroke: { show: false },
+      fill: { type: 'solid', opacity: 0.9 },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '75%',
+            labels: {
+              show: true,
+              total: {
+                show: true,
+                label: 'Total',
+                color: '#aeb5cc',
+                fontSize: '14px',
+                formatter: () => data.reduce((a,b)=>a+b,0)
+              }
+            }
+          }
+        }
+      },
+      legend: { position: 'bottom', labels: { colors: '#aeb5cc' } },
+      dropShadow: { enabled: true, top: 2, blur: 6, opacity: 0.25 }
+    }).render();
+  </script>
+
+</body>
+</html>

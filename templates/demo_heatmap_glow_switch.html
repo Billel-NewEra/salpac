@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>📅 Activité Hebdomadaire – Amber Steel (bornes correctes)</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at 30% 20%, #0B0D13, #04060A 80%);
+      color: #E4E7EC;
+      font-family: "Inter", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      height: 100vh;
+      margin: 0;
+    }
+    .chart-card {
+      position: relative;
+      background: linear-gradient(145deg, rgba(32,33,40,0.6), rgba(15,15,20,0.8));
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 22px;
+      backdrop-filter: blur(14px);
+      padding: 2rem;
+      width: 760px;
+      box-shadow: 0 10px 45px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+    .chart-card::before {
+      content: "";
+      position: absolute;
+      inset: -80px;
+      background: radial-gradient(circle at 60% 40%, rgba(255,185,100,0.12), rgba(255,255,255,0) 70%);
+      z-index: 0;
+      animation: metallicGlow 12s infinite alternate ease-in-out;
+    }
+    @keyframes metallicGlow {
+      0% { transform: translate(0,0); opacity: 0.4; }
+      100% { transform: translate(40px,20px); opacity: 0.9; }
+    }
+    .chart-title {
+      font-weight: 600;
+      color: #F9FAFB;
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      letter-spacing: .3px;
+      position: relative;
+      z-index: 2;
+      text-shadow: 0 0 10px rgba(255,185,100,0.4);
+    }
+    #heatmapAmber { position: relative; z-index: 2; }
+    .apexcharts-legend-text { color: #bfc4d0 !important; font-size: 13px !important; }
+  </style>
+</head>
+<body>
+  <div class="chart-card">
+    <div class="chart-title">📅 Activité Hebdomadaire</div>
+    <div id="heatmapAmber"></div>
+  </div>
+
+  <script>
+    const days  = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+    const weeks = ['S40','S41','S42','S43'];
+    const data  = [
+      [4, 9, 17, 30, 42, 23, 11], // S40 (Dim=4)
+      [3, 20, 32, 41, 46, 25,  8], // S41 (Ven=25)
+      [5, 15, 26, 34, 38, 27, 13],
+      [7, 18, 29, 37, 49, 33, 14]
+    ];
+
+    const series = weeks.map((w, i) => ({
+      name: w,
+      data: days.map((d, j) => ({ x: d, y: data[i][j] }))
+    }));
+
+    // ✅ Bornes sans chevauchement ni trous (to = borne supérieure exclusive)
+    // Affichage logique voulu : 1–4, 5–14, 15–25, 26–35, 36–45, 46+
+    const colorScale = [
+      { from: 1,  to: 5,   color: '#1F2937' }, // couvre 1..4
+      { from: 5,  to: 15,  color: '#3B82F6' }, // couvre 5..14
+      { from: 15, to: 26,  color: '#64748B' }, // couvre 15..25
+      { from: 26, to: 36,  color: '#D97706' }, // couvre 26..35
+      { from: 36, to: 46,  color: '#EA580C' }, // couvre 36..45
+      { from: 46, to: 10000, color: '#FACC15' } // couvre 46+
+    ];
+
+    const options = {
+      chart: { type: 'heatmap', height: 350, background: 'transparent', toolbar: { show: false } },
+      series,
+      plotOptions: {
+        heatmap: {
+          shadeIntensity: 0.9,
+          radius: 5,
+          enableShades: true,
+          colorScale: {
+            ranges: colorScale,
+            inverse: false,
+            min: 0,
+            max: 10000
+          }
+        }
+      },
+      dataLabels: { enabled: false },
+      xaxis: { categories: days, labels: { style: { colors: '#d0d5e0' } } },
+      yaxis: { labels: { style: { colors: '#d0d5e0' } } },
+      grid: { borderColor: 'rgba(255,255,255,0.06)' },
+      legend: { position: 'bottom', labels: { colors: '#c6c9d2' } },
+      tooltip: { theme: 'dark', y: { formatter: v => `${v} commandes` } }
+    };
+
+    new ApexCharts(document.querySelector("#heatmapAmber"), options).render();
+  </script>
+</body>
+</html>

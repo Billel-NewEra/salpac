@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>📊 Demo Dashboard - NovoPrint Charts</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <style>
+    body {
+      background: #0b1220;
+      color: #e6eef8;
+      font-family: "Inter", sans-serif;
+      margin: 0;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+      gap: 2rem;
+    }
+
+    .chart-card {
+      background: linear-gradient(180deg, #121a2b 0%, #10182a 100%);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+      transition: all .25s ease;
+      position: relative;
+    }
+
+    .chart-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 0 24px rgba(73,190,255,.25);
+    }
+
+    .chart-title {
+      font-weight: 600;
+      color: #aeb5cc;
+      text-align: center;
+      margin-bottom: .6rem;
+      font-size: 1.1rem;
+      letter-spacing: .3px;
+    }
+
+    .apexcharts-legend-text {
+      color: #aeb5cc !important;
+      font-size: 13px !important;
+    }
+
+    /* Légère lueur autour des lignes */
+    .glow {
+      filter: drop-shadow(0 0 6px rgba(73,190,255,0.4));
+    }
+  </style>
+</head>
+<body>
+
+  <div class="chart-card">
+    <div class="chart-title">📈 Évolution des commandes</div>
+    <div id="chartOrdersEvolution"></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">👥 Commandes par client</div>
+    <div id="chartOrdersByClient"></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">📦 Produits les plus livrés</div>
+    <div id="chartTopProducts"></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">🔥 Activité par jour de la semaine</div>
+    <div id="chartHeatmapWeek"></div>
+  </div>
+
+
+  <script>
+    // Couleurs de ton thème
+    const colors = ['#22C55E', '#E9B949', '#49BEFF'];
+
+    /* 1️⃣ Évolution des commandes */
+    new ApexCharts(document.querySelector("#chartOrdersEvolution"), {
+      chart: { type: 'line', height: 280, toolbar: { show: false }, background: 'transparent' },
+      series: [
+        { name: 'Commandes', data: [20, 30, 45, 60, 58, 70, 90, 120, 110, 130, 150, 180] }
+      ],
+      xaxis: { categories: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'], labels: { style: { colors: '#aeb5cc' }}},
+      yaxis: { labels: { style: { colors: '#aeb5cc' }}},
+      stroke: { curve: 'smooth', width: 3, colors: ['#49BEFF'] },
+      markers: { size: 4, colors: ['#fff'], strokeColors: '#49BEFF', strokeWidth: 2 },
+      grid: { borderColor: 'rgba(255,255,255,0.05)' },
+      fill: {
+        type: 'gradient',
+        gradient: { shadeIntensity: 0.6, opacityFrom: 0.4, opacityTo: 0.1, stops: [0, 90, 100], colorStops: [] }
+      }
+    }).render();
+
+    /* 2️⃣ Commandes par client */
+    new ApexCharts(document.querySelector("#chartOrdersByClient"), {
+      chart: { type: 'bar', height: 280, toolbar: { show: false } },
+      series: [{ name: 'Commandes', data: [75, 62, 55, 42, 38, 28] }],
+      xaxis: {
+        categories: ['Jack Design', 'NovaPack', 'Print&Go', 'EcoPack', 'VisuPrint', 'LogiPack'],
+        labels: { style: { colors: '#aeb5cc' } }
+      },
+      plotOptions: { bar: { borderRadius: 6, distributed: true, columnWidth: '55%' } },
+      colors: ['#49BEFF', '#22C55E', '#E9B949', '#49BEFF', '#22C55E', '#E9B949'],
+      dataLabels: { enabled: false },
+      grid: { borderColor: 'rgba(255,255,255,0.05)' }
+    }).render();
+
+    /* 3️⃣ Produits les plus livrés (vue globale) */
+    new ApexCharts(document.querySelector("#chartTopProducts"), {
+      chart: { type: 'bar', height: 280, toolbar: { show: false } },
+      series: [{ data: [320, 280, 210, 180, 160, 140] }],
+      xaxis: { categories: ['Boîte carton 30x20', 'Étiquettes vinyles', 'Papier glacé A3', 'Boîte alimentaire', 'Carton ondulé', 'Bouteilles PET'], labels: { style: { colors: '#aeb5cc' } } },
+      plotOptions: { bar: { horizontal: true, borderRadius: 6 } },
+      colors: ['#22C55E'],
+      grid: { borderColor: 'rgba(255,255,255,0.05)' }
+    }).render();
+
+    /* 4️⃣ Heatmap activité par jour de la semaine */
+    new ApexCharts(document.querySelector("#chartHeatmapWeek"), {
+      chart: { type: 'heatmap', height: 280, toolbar: { show: false } },
+      dataLabels: { enabled: false },
+      colors: ["#49BEFF"],
+      series: [
+        { name: "Commandes", data: [ { x: "Lun", y: 22 }, { x: "Mar", y: 35 }, { x: "Mer", y: 48 }, { x: "Jeu", y: 40 }, { x: "Ven", y: 62 }, { x: "Sam", y: 50 }, { x: "Dim", y: 10 } ] }
+      ],
+      plotOptions: { heatmap: { shadeIntensity: 0.7, radius: 6, enableShades: true, distributed: true } },
+      xaxis: { labels: { style: { colors: '#aeb5cc' } } },
+      yaxis: { labels: { show: false } },
+      grid: { borderColor: 'rgba(255,255,255,0.05)' }
+    }).render();
+
+    
+  </script>
+</body>
+</html>

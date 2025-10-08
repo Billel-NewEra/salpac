@@ -1,22 +1,43 @@
-{% extends "base.html" %}
+{% extends "base_auth.html" %}
 {% block title %}Connexion{% endblock %}
 {% block content %}
-<div class="container mt-5" style="max-width: 400px;">
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <h4 class="card-title mb-3 text-center">🔐 Connexion</h4>
-      <form method="POST">
-        <div class="mb-3">
-          <label for="username" class="form-label">Nom d'utilisateur</label>
-          <input type="text" class="form-control" id="username" name="username" required>
-        </div>
-        <div class="mb-3">
-          <label for="password" class="form-label">Mot de passe</label>
-          <input type="password" class="form-control" id="password" name="password" required>
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Se connecter</button>
-      </form>
+
+<div class="card login-card shadow-lg p-4">
+  <div class="card-body">
+    <div class="text-center mb-4">
+      <img src="{{ url_for('static', filename='img/salpac-logo.png') }}" 
+           alt="Logo" 
+           style="max-height: 70px; width: auto;" 
+           class="mb-3">
+      <h3 class="text-light fw-bold">Connexion</h3>
+      <p class="text-secondary">Accédez à votre espace</p>
     </div>
+
+    <form method="POST">
+      <!-- Username -->
+      <div class="mb-3 input-group">
+        <span class="input-group-text bg-transparent border-end-0">
+          <i class="bi bi-person-fill text-secondary"></i>
+        </span>
+        <input type="text" class="form-control border-start-0"
+               autocomplete="username" id="username" name="username"
+               placeholder="Nom d'utilisateur" required>
+      </div>
+
+      <!-- Password -->
+      <div class="mb-3 input-group">
+        <span class="input-group-text bg-transparent border-end-0">
+          <i class="bi bi-lock-fill text-secondary"></i>
+        </span>
+        <input type="password" class="form-control border-start-0"
+               autocomplete="current-password" id="password" name="password"
+               placeholder="Mot de passe" required>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="btn btn-primary w-100 mt-2">Se connecter</button>
+    </form>
   </div>
 </div>
+
 {% endblock %}
