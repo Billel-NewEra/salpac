@@ -866,5 +866,15 @@ def delete_user(user_id):
     flash("✅ Utilisateur supprimé avec succès", "success")
     return redirect(url_for("list_users"))
 
+@app.route('/impressions')
+@login_required
+def impressions():
+    return render_template('impressions.html')
+
+@app.route('/decoupes')
+@login_required
+def decoupes():
+    return render_template('decoupes.html')
+
 if __name__ == "__main__":
     app.run(debug=True, port=8888)

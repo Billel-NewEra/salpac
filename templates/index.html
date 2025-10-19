@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Dashboard - NovoPrint{% endblock %}
+{% block title %}Dashboard - SALPAC{% endblock %}
 
 {% block content %}
 {% if session.pop("welcome", None) and current_user.is_authenticated %}
@@ -317,6 +317,9 @@ document.addEventListener('DOMContentLoaded', function () {
     xaxis: {
       categories: products,
       labels: { show: false } // pas besoin de répéter les noms (on les garde dans la légende)
+    },
+    yaxis: {
+      labels: { show: false }   // 🚫 masque les labels de l'axe Y
     },
     plotOptions: {
       bar: {

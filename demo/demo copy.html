@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>✨ Ultra Démo — SALPAC 40 effets ✨</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #0C1427;
+      color: #E2E8F0;
+      font-family: 'Inter', sans-serif;
+      padding: 2rem;
+    }
+    h1 { text-align: center; margin-bottom: 2rem; }
+    .demo-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      justify-content: center;
+    }
+    .demo-item {
+      background: rgba(255,255,255,0.05);
+      padding: 1.2rem;
+      border-radius: 14px;
+      min-width: 250px;
+      text-align: center;
+    }
+    .demo-item h2 {
+      font-size: 2rem;
+      letter-spacing: 2px;
+      margin-bottom: 0;
+    }
+
+    /* 💡 Neon & Glow avancé */
+    .neon-classic { animation: neonClassic 2s ease-in-out infinite; }
+    @keyframes neonClassic {
+      0%,100%{text-shadow:0 0 4px #5D87FF,0 0 12px #49BEFF}
+      50%{text-shadow:0 0 10px #5D87FF,0 0 30px #49BEFF}
+    }
+
+    .neon-fire { animation: neonFire 2s ease-in-out infinite; color: #ff6600; }
+    @keyframes neonFire {
+      0%,100%{text-shadow:0 0 5px #ff6600,0 0 15px #ff4400}
+      50%{text-shadow:0 0 20px #ff8800,0 0 40px #ff2200}
+    }
+
+    .retro-flicker { animation: flicker 3s infinite; color:#49BEFF; text-shadow:0 0 8px #49BEFF; }
+    @keyframes flicker {
+      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+      20%, 22%, 24%, 55% { opacity: 0.3; }
+    }
+
+    .glow-ring {
+      animation: glowRing 2s ease-in-out infinite;
+    }
+    @keyframes glowRing {
+      0%{text-shadow:0 0 5px #49BEFF}
+      50%{text-shadow:0 0 25px #49BEFF,0 0 40px #5D87FF}
+      100%{text-shadow:0 0 5px #49BEFF}
+    }
+
+    /* 🌀 Mouvements */
+    .float-text { animation: floatText 3s ease-in-out infinite; }
+    @keyframes floatText { 0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)} }
+
+    .shake-text { animation: shakeText 0.8s ease-in-out infinite; }
+    @keyframes shakeText {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-3px)}
+      40%{transform:translateX(3px)}
+      60%{transform:translateX(-3px)}
+      80%{transform:translateX(3px)}
+    }
+
+    .swing { transform-origin: top center; animation: swing 2.5s ease-in-out infinite; }
+    @keyframes swing {
+      0%,100%{transform:rotate(0deg)}
+      25%{transform:rotate(3deg)}
+      75%{transform:rotate(-3deg)}
+    }
+
+    .zoom-bounce { animation: zoomBounce 2s ease-in-out infinite; }
+    @keyframes zoomBounce {
+      0%,100%{transform:scale(1)}
+      50%{transform:scale(1.15)}
+    }
+
+    /* 🌈 Dégradés & couleurs */
+    .gradient-flow {
+      background: linear-gradient(90deg,#5D87FF,#49BEFF,#7C3AED);
+      background-size: 200% auto;
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      animation: gradientMove 4s linear infinite;
+    }
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
+    .rainbow-text {
+      background: linear-gradient(270deg, red, orange, yellow, green, blue, indigo, violet);
+      background-size: 400%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: rainbowSlide 6s linear infinite;
+    }
+    @keyframes rainbowSlide {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 400% 50%; }
+    }
+
+    .aurora {
+      background: linear-gradient(90deg,#49BEFF,#7C3AED,#22C55E,#F59E0B);
+      background-size:300%;
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      animation: auroraMove 5s ease-in-out infinite;
+    }
+    @keyframes auroraMove {
+      0%{background-position:0% 50%}
+      50%{background-position:100% 50%}
+      100%{background-position:0% 50%}
+    }
+
+    .solar-flare {
+      background: linear-gradient(90deg,#ff6a00,#ee0979,#ff6a00);
+      background-size:200%;
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      animation: solarFlare 2.5s linear infinite;
+    }
+    @keyframes solarFlare {
+      0%{background-position:0% 50%}
+      100%{background-position:200% 50%}
+    }
+
+    /* 🔮 Spéciaux */
+    .glitch { position: relative; animation: glitchAnim 1s infinite; }
+    @keyframes glitchAnim {
+      0% { transform: translate(0) }
+      20% { transform: translate(-2px,2px) }
+      40% { transform: translate(-2px,-2px) }
+      60% { transform: translate(2px,2px) }
+      80% { transform: translate(2px,-2px) }
+      100% { transform: translate(0) }
+    }
+
+    .scanline {
+      position: relative;
+      color: #49BEFF;
+      overflow: hidden;
+    }
+    .scanline::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: scan 3s linear infinite;
+    }
+    @keyframes scan {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    .blur-pulse { animation: blurPulse 2.5s ease-in-out infinite; }
+    @keyframes blurPulse {
+      0%, 100% { text-shadow: 0 0 2px #49BEFF; filter: blur(0); }
+      50% { text-shadow: 0 0 20px #49BEFF; filter: blur(1px); }
+    }
+
+    .sparkling {
+      animation: sparkling 3s ease-in-out infinite;
+    }
+    @keyframes sparkling {
+      0% { text-shadow: 0 0 4px #fff, 0 0 10px #49BEFF; }
+      50% { text-shadow: 0 0 20px #fff, 0 0 40px #49BEFF; }
+      100% { text-shadow: 0 0 4px #fff, 0 0 10px #49BEFF; }
+    }
+
+    /* 🪄 Cinématiques */
+    .typing {
+      font-family: 'Courier New', monospace;
+      border-right: 2px solid #49BEFF;
+      white-space: nowrap;
+      overflow: hidden;
+      width: 0;
+      animation: typing 3s steps(6) 1s forwards, blink 0.7s infinite;
+    }
+    @keyframes typing { to { width: 6ch; } }
+    @keyframes blink {
+      0%, 50% { border-color: #49BEFF; }
+      51%, 100% { border-color: transparent; }
+    }
+
+    .letter-sequence span {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: letterAppear 0.6s forwards;
+    }
+    @keyframes letterAppear {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-sequence {
+      animation: fadeSeq 3s ease-in-out infinite;
+    }
+    @keyframes fadeSeq {
+      0%,100%{opacity:0.3}
+      50%{opacity:1}
+    }
+  </style>
+</head>
+<body>
+
+  <h1>✨ Ultra Démo — 40 Effets Titre <strong>SALPAC</strong></h1>
+
+  <div class="demo-container">
+    <div class="demo-item"><h2 class="neon-classic">SALPAC</h2><p>Neon Classic</p></div>
+    <div class="demo-item"><h2 class="neon-fire">SALPAC</h2><p>Neon Fire</p></div>
+    <div class="demo-item"><h2 class="retro-flicker">SALPAC</h2><p>Retro Flicker</p></div>
+    <div class="demo-item"><h2 class="glow-ring">SALPAC</h2><p>Glow Ring</p></div>
+
+    <div class="demo-item"><h2 class="float-text">SALPAC</h2><p>Float</p></div>
+    <div class="demo-item"><h2 class="shake-text">SALPAC</h2><p>Shake</p></div>
+    <div class="demo-item"><h2 class="swing">SALPAC</h2><p>Swing</p></div>
+    <div class="demo-item"><h2 class="zoom-bounce">SALPAC</h2><p>Zoom Bounce</p></div>
+
+    <div class="demo-item"><h2 class="gradient-flow">SALPAC</h2><p>Gradient Flow</p></div>
+    <div class="demo-item"><h2 class="rainbow-text">SALPAC</h2><p>Rainbow Wave</p></div>
+    <div class="demo-item"><h2 class="aurora">SALPAC</h2><p>Aurora</p></div>
+    <div class="demo-item"><h2 class="solar-flare">SALPAC</h2><p>Solar Flare</p></div>
+
+    <div class="demo-item"><h2 class="glitch">SALPAC</h2><p>Glitch</p></div>
+    <div class="demo-item"><h2 class="scanline">SALPAC</h2><p>Scanline</p></div>
+    <div class="demo-item"><h2 class="blur-pulse">SALPAC</h2><p>Blur Pulse</p></div>
+    <div class="demo-item"><h2 class="sparkling">SALPAC</h2><p>Sparkling Glow</p></div>
+
+    <div class="demo-item"><h2 class="typing">SALPAC</h2><p>Typing</p></div>
+    <div class="demo-item"><h2 class="fade-sequence">SALPAC</h2><p>Fade Sequence</p></div>
+  </div>
+
+</body>
+</html>

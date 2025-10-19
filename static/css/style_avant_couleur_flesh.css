@@ -1224,32 +1224,25 @@ Style du Dashboard
 }
 
 /* =========================
-   🧭 Chevron dynamique (suivant la couleur du texte)
+   🧭 Chevron blanc (remplace icône Bootstrap)
    ========================= */
-
-/* 1️⃣ Supprime complètement l'icône Bootstrap */
-.sidebar .accordion-button::after {
-  background-image: none !important;
-  background: none !important;
+.sidebar .accordion-button {
+  --bs-accordion-btn-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5 6l3 3 3-3' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --bs-accordion-btn-active-icon: var(--bs-accordion-btn-icon);
 }
 
-/* 2️⃣ Crée le chevron avec des bordures */
 .sidebar .accordion-button::after {
-  content: "";
-  display: inline-block;
-  width: 0.45rem;
-  height: 0.45rem;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(-45deg); /* flèche pointant à droite (fermé) */
-  transition: transform 0.25s ease, color 0.25s ease;
-  margin-left: auto;
-  margin-right: 0.25rem;
+  background-image: var(--bs-accordion-btn-icon) !important;
+  background-size: 1rem 1rem;
+  opacity: 1 !important;
+  filter: none !important;
+  transform: rotate(-90deg);
+  transition: transform 0.25s ease;
 }
 
-/* 3️⃣ Quand ouvert, pointe vers le bas */
 .sidebar .accordion-button:not(.collapsed)::after {
-  transform: rotate(45deg);
+  background-image: var(--bs-accordion-btn-active-icon) !important;
+  transform: rotate(0deg);
 }
 
 /* =========================
@@ -1258,7 +1251,7 @@ Style du Dashboard
 .submenu-link {
   display: flex;
   align-items: center;
-  padding: 0.45rem 1rem 0.45rem 2rem;
+  padding: 0.45rem 1rem 0.45rem 2rem;   /* ✅ aligné avec le parent */
   margin: 0 0.5rem;
   width: calc(100% - 1rem);
   font-size: 0.9rem;
@@ -1297,10 +1290,6 @@ Style du Dashboard
    ========================= */
 .sidebar .accordion {
   margin-top: 0.75rem;
-}
-
-.sidebar .accordion-collapse {
-  overflow: hidden;
 }
 
 
