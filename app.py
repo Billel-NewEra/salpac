@@ -126,13 +126,15 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
         user = get_user_by_username(username)
+
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
-            session["welcome"] = True   # ✅ flag toast
-            #flash("Connexion réussie ✅", "success")
-            return redirect(url_for("index"))
+            session["welcome"] = True
+            return jsonify({"success": True, "redirect": url_for("index")})
         else:
-            flash("Nom d'utilisateur ou mot de passe incorrect ❌", "danger")
+            # ✅ On renvoie du JSON au lieu de recharger la page
+            return jsonify({"success": False, "message": "Nom d'utilisateur ou mot de passe incorrect ❌"})
+
     return render_template("login.html")
 
 @app.route("/logout")
@@ -172,8 +174,12 @@ def inject_client_name():
 #   ROUTES PRINCIPALES
 # ============================
 
-# ---- Dashboard ----
 @app.route("/")
+def home():
+    return render_template("home.html", current_year=datetime.now().year)
+
+# ---- Dashboard ----
+@app.route("/index")
 @login_required
 def index():
     conn = get_db_connection()

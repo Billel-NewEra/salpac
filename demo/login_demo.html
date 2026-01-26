@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Démo Login Moderne</title>
+
+    <!-- Bootstrap + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+    <style>
+      html {
+        overflow-y: scroll; /* ✅ barre fantôme → pas de décalage */
+      }
+
+      body {
+        margin: 0;
+        background: linear-gradient(135deg, #0d6efd, #6610f2);
+        height: 100vh;          /* ✅ hauteur stable */
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;       /* ✅ empêche tout scroll */
+      }
+
+      .login-card {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        border-radius: 1rem;
+        width: 100%;
+        max-width: 400px;
+        padding: 2rem;
+        box-shadow: 0 0 25px rgba(0, 0, 0, 0.2);
+      }
+
+      .login-card h3 {
+        color: #fff;
+      }
+
+      .input-error {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
+        transition: 0.3s;
+      }
+
+      .swal2-popup {
+        border-radius: 1rem !important;
+      }
+
+      .form-control,
+      .input-group-text {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: #fff !important;
+        border: none;
+      }
+
+      .form-control:focus {
+        box-shadow: 0 0 10px rgba(13, 110, 253, 0.6);
+      }
+
+      ::placeholder {
+        color: #ddd !important;
+      }
+
+      .btn-primary {
+        background: #0d6efd;
+        border: none;
+        font-weight: 600;
+      }
+
+      .btn-primary:hover {
+        background: #0b5ed7;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="login-card animate__animated animate__fadeIn">
+      <div class="text-center mb-4">
+        <i class="bi bi-shield-lock-fill text-white display-4 mb-2"></i>
+        <h3 class="fw-bold">Connexion</h3>
+        <p class="text-light-50">Accédez à votre espace</p>
+      </div>
+
+      <form id="demoLoginForm">
+        <div class="mb-3 input-group">
+          <span class="input-group-text bg-transparent border-end-0">
+            <i class="bi bi-person-fill"></i>
+          </span>
+          <input type="text" class="form-control border-start-0" id="demoUsername" placeholder="Nom d'utilisateur" required>
+        </div>
+
+        <div class="mb-3 input-group">
+          <span class="input-group-text bg-transparent border-end-0">
+            <i class="bi bi-lock-fill"></i>
+          </span>
+          <input type="password" class="form-control border-start-0" id="demoPassword" placeholder="Mot de passe" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 mt-2" id="demoLoginBtn">
+          Se connecter
+        </button>
+      </form>
+    </div>
+
+    <script>
+      const form = document.getElementById('demoLoginForm');
+      const btn = document.getElementById('demoLoginBtn');
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = 'Connexion...';
+
+        const user = document.getElementById('demoUsername').value.trim();
+        const pass = document.getElementById('demoPassword').value.trim();
+
+        // ✅ Démo : login fictif
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = originalText;
+
+          if (user === "admin" && pass === "1234") {
+            Swal.fire({
+              icon: 'success',
+              title: 'Bienvenue !',
+              text: 'Connexion réussie ✅',
+              scrollbarPadding: false,  // 👈 le point clé
+              background: '#1e1e2f',
+              color: '#fff',
+            });
+          } else {
+            showError("Nom d'utilisateur ou mot de passe incorrect ❌");
+          }
+        }, 800);
+      });
+
+      function showError(message) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur de connexion',
+          text: message,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#d33',
+          background: '#1e1e2f',
+          color: '#fff',
+          showClass: { popup: 'animate__animated animate__shakeX animate__faster' },
+          backdrop: 'rgba(0,0,0,0.6)',
+          scrollbarPadding: false // ✅ empêche le saut vertical
+        });
+
+        const u = document.getElementById('demoUsername');
+        const p = document.getElementById('demoPassword');
+        u.classList.add('input-error');
+        p.classList.add('input-error');
+        setTimeout(() => {
+          u.classList.remove('input-error');
+          p.classList.remove('input-error');
+        }, 1200);
+      }
+    </script>
+  </body>
+</html>
