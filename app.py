@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
 import sqlite3
 from datetime import datetime, timedelta, date
 import calendar
@@ -174,6 +174,14 @@ def inject_client_name():
 # ============================
 #   ROUTES PRINCIPALES
 # ============================
+
+@app.route('/service-worker.js')
+def service_worker():
+    return send_from_directory(
+        directory=app.root_path,
+        path="service-worker.js",
+        mimetype="application/javascript"
+    )
 
 @app.route("/")
 def home():
