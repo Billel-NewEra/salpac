@@ -262,12 +262,5 @@
         .catch(err => console.error("SW registration failed:", err));
     }
   </script>
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/salpac/service-worker.js")
-        .then(reg => console.log("Service Worker registered (auth), scope:", reg.scope))
-        .catch(err => console.error("SW registration failed (auth):", err));
-    }
-  </script>
 </body>
 </html>
