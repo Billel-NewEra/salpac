@@ -1,9 +1,9 @@
-const CACHE_NAME = "novoprint-cache-v1";
+const CACHE_NAME = "salpac-cache-v1";
 const urlsToCache = [
-  "/novoprint/",
-  "/novoprint/static/css/style.css",
-  "/novoprint/static/icons/novoprint_icon_192.png",
-  "/novoprint/static/icons/novoprint_icon_512.png"
+  "/salpac/",
+  "/salpac/static/css/style.css",
+  "/salpac/static/icons/salpac_icon_192.png",
+  "/salpac/static/icons/salpac_icon_512.png"
 ];
 
 // Install SW
