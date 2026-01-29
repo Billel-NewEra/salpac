@@ -1,7 +1,7 @@
 deployment:
   tasks:
     # 1. Définir le dossier de déploiement (celui de ton app Passenger)
-    - export DEPLOYPATH=/home/mobibenz1/novoprint
+    - export DEPLOYPATH=/home/mobibenz1/salpac
 
     # 2. Copier les fichiers depuis le repo vers le dossier de l'app
     - /bin/rsync -a --delete $PWD/ $DEPLOYPATH

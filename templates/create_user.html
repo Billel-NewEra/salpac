@@ -16,7 +16,7 @@
 
       <div class="row">
         <!-- Colonne gauche -->
-        <div class="col-md-6 pe-md-4">
+        <div class="col-md-6 pe-md-4 mb-4 mb-md-0">
           <label for="client_id" class="form-label fw-semibold text-light">🏢 Client associé</label>
           <select name="client_id" id="client_id" class="form-select form-select-lg spike-input" required>
             <option value="">-- Choisir un client --</option>
@@ -28,7 +28,7 @@
 
         <!-- Colonne droite -->
         <div class="col-md-6 ps-md-4">
-          <div class="mb-3">
+          <div class="mb-4">
             <label for="username" class="form-label fw-semibold text-light">👤 Nom d'utilisateur</label>
             <input type="text" name="username" autocomplete="username" id="username" class="form-control form-control-lg spike-input" required>
           </div>
@@ -113,6 +113,17 @@
   .btn-outline-light:hover {
     background-color: rgba(255,255,255,0.1);
   }
+
+  .form-label {
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 768px) {
+  .card-body form .row > div {
+    margin-bottom: 1rem;
+  }
+}
 </style>
 
 <script>

@@ -38,9 +38,10 @@
               <div class="actions-cell">
                 {% if u.role != "admin" %}
                 <form action="{{ url_for('delete_user', user_id=u.id) }}" method="post" style="display:inline;">
-                  <button type="submit" class="btn btn-sm btn-danger"
-                          onclick="return confirm('Supprimer ce compte ?')"
-                          title="Supprimer l’utilisateur">
+                  <button type="submit"
+                    class="btn btn-sm btn-danger btn-delete-user"
+                    data-username="{{ u.username }}"
+                    title="Supprimer l’utilisateur">
                     <i class="bi bi-trash"></i>
                   </button>
                 </form>
@@ -51,10 +52,55 @@
             </td>
           </tr>
           {% endfor %}
+          <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         </tbody>
       </table>
     </div>
   </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  document.querySelectorAll('.btn-delete-user').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+
+      const form = this.closest('form');
+      const username = this.dataset.username || 'cet utilisateur';
+
+      Swal.fire({
+        title: 'Supprimer le compte ?',
+        text: `Le compte "${username}" sera définitivement supprimé.`,
+        
+        showCancelButton: true,
+        confirmButtonText: 'Oui, supprimer',
+        cancelButtonText: 'Annuler',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        background: '#1E2746',
+        color: '#E2E8F0',
+        backdrop: 'rgba(0,0,0,0.6)',
+        customClass: {
+          popup: 'swal-mobile-compact'
+        },
+        showClass: {
+          popup: 'animate__animated animate__zoomIn animate__faster'
+        },
+        hideClass: {
+          popup: 'animate__animated animate__zoomOut animate__faster'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
+    });
+  });
+
+});
+</script>
 {% endblock %}

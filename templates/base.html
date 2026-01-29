@@ -26,6 +26,7 @@
   </script>
 
   <body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="d-flex flex-column align-items-center py-4">
@@ -73,6 +74,7 @@
           </div>
 
           <!-- Atelier -->
+           {% if current_user.role == 'admin' %}
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button {% if request.endpoint in ['impression','decoupe','pliage'] %}active{% else %}collapsed{% endif %}"
@@ -91,6 +93,7 @@
               </div>
             </div>
           </div>
+          {% endif %}
 
           {% if current_user.role == 'admin' %}
           <!-- Administration -->
@@ -121,15 +124,12 @@
     <div class="main">
       <div class="topbar-wrapper">
         <header class="topbar d-flex align-items-center px-4">
+          <!-- 🍔 Hamburger mobile -->
+          <button class="hamburger-inbar" id="hamburgerBtn" aria-label="Menu">
+            <i class="bi bi-list"></i>
+          </button>
           <div class="ms-auto d-flex align-items-center gap-3">
             <i class="bi bi-grid fs-5"></i>
-            <div class="position-relative">
-              <i class="bi bi-bell fs-5"></i>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                3
-              </span>
-            </div>
-            <i class="bi bi-chat-dots fs-5"></i>
             <i class="bi bi-moon-stars fs-5 theme-toggle" style="cursor:pointer;"></i>
 
             {% if current_user.is_authenticated %}
@@ -175,29 +175,15 @@
         {% block content %}{% endblock %}
       </main>
 
-      <footer class="bg-dark text-light text-center py-3 shadow-lg">
-        <small>&copy; {{ current_year }} Powered by 
-          <span class="fw-bold brand-signature">MobiPrint</span>
+      <footer class="app-footer">
+        <small>
+          &copy; {{ current_year }} · Powered by
+          <span class="footer-brand">MobiPrint</span>
         </small>
       </footer>
     </div>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const mobiprint = document.querySelector("footer .brand-signature");
-        let playedOnce = false;
-        const observer = new IntersectionObserver(entries => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting && !playedOnce) {
-              mobiprint.classList.add("glow-once");
-              playedOnce = true;
-              observer.unobserve(mobiprint);
-            }
-          });
-        }, { threshold: 0.5 });
-        observer.observe(mobiprint);
-      });
-    </script>
+    
     <script>
       document.querySelector('.theme-toggle')?.addEventListener('click', () => {
         document.body.classList.toggle('dark-mode');
@@ -234,6 +220,33 @@
       });
     </script>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const sidebar  = document.querySelector('.sidebar');
+  const burger   = document.getElementById('hamburgerBtn');
+  const overlay  = document.getElementById('sidebarOverlay');
+
+  if (!sidebar || !burger || !overlay) return;
+
+  const openSidebar = () => {
+    sidebar.classList.add('show');
+    overlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeSidebar = () => {
+    sidebar.classList.remove('show');
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+  };
+
+  burger.addEventListener('click', () => {
+    sidebar.classList.contains('show') ? closeSidebar() : openSidebar();
+  });
+
+  overlay.addEventListener('click', closeSidebar);
+});
+</script>
     {% block scripts %}{% endblock %}
   </body>
 </html>

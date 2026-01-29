@@ -2,11 +2,12 @@
 {% block title %}Commandes{% endblock %}
 {% block content %}
 
-<h4 class="mb-3">Liste des Commandes</h4>
+<h4 class="mb-3">📦 Liste des Commandes</h4>
 
 <!-- 🔎 Filtres -->
 <form method="get" action="{{ url_for('orders') }}" class="mb-2">
   <div class="row g-2 align-items-end">
+    <!-- Période -->
     <div class="col-md-2">
       <label for="period" class="form-label small">📅 Période</label>
       <select id="period" name="period" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -19,6 +20,7 @@
       </select>
     </div>
 
+    <!-- Statut -->
     <div class="col-md-2">
       <label for="status" class="form-label small">📌 Statut</label>
       <select id="status" name="status" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -29,6 +31,7 @@
       </select>
     </div>
 
+    <!-- Client (admin uniquement) -->
     {% if current_user.role == 'admin' %}
     <div class="col-md-3">
       <label for="client" class="form-label small">🏢 Client</label>
@@ -39,6 +42,7 @@
     </div>
     {% endif %}
 
+    <!-- Produit -->
     <div class="col-md-3">
       <label for="product" class="form-label small">📦 Produit</label>
       <input type="text" name="product" value="{{ product }}" id="product"
@@ -47,6 +51,7 @@
              onkeydown="if(event.key==='Enter'){this.form.submit();}">
     </div>
 
+    <!-- Bouton -->
     <div class="col-md-2">
       <button type="submit" class="btn btn-sm btn-primary w-100">Filtrer</button>
     </div>
@@ -60,41 +65,37 @@
       <table class="table table-dark table-compact table-striped table-borderless align-middle">
         <thead>
           <tr>
-            <th class="d-none d-md-table-cell">#</th>
+            <th>#</th>
             <th>CmdCL</th>
             {% if current_user.role == 'admin' %}
-              <th class="d-none d-md-table-cell">Client</th>
+              <th>Client</th>
             {% endif %}
             <th>Produit</th>
-            <th class="d-none d-sm-table-cell">Qté</th>
-            <th class="d-none d-md-table-cell">Date</th>
+            <th>Qté</th>
+            <th>Date</th>
             <th>Statut</th>
-            <th class="d-none d-lg-table-cell">Livré</th>
-            <th class="d-none d-lg-table-cell">Reste</th>
+            <th>Livré</th>
+            <th>Reste</th>
+            {% if current_user.role == 'admin' %}
               <th class="text-center" style="width:1%;">Actions</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
           {% for o in orders %}
           <tr>
-            <td class="d-none d-md-table-cell">{{ o.num_reservation }}</td>
+            <td>{{ o.num_reservation }}</td>
             <td>{{ o.cmdl }}</td>
-
             {% if current_user.role == 'admin' %}
-              <td class="d-none d-md-table-cell text-truncate" style="max-width:160px;">
-                {{ o.client }}
-              </td>
+              <td>{{ o.client }}</td>
             {% endif %}
-
             <td>{{ o.produit }}</td>
-            <td class="d-none d-sm-table-cell">{{ o.qte }}</td>
-
-            <td class="d-none d-md-table-cell">
+            <td>{{ o.qte }}</td>
+            <td>
               {% if o.date_reservation %}
                 {{ o.date_reservation.strftime('%d/%m/%Y') if o.date_reservation.__class__.__name__ != 'str' else o.date_reservation }}
               {% endif %}
             </td>
-
             <td>
               {% if o.situation == 'LIVREE' %}
                 <span class="badge bg-success-subtle text-success border-success-subtle">Livrée</span>
@@ -104,19 +105,19 @@
                 <span class="badge bg-warning-subtle text-warning border-warning-subtle">En cours</span>
               {% endif %}
             </td>
-
-            <td class="d-none d-lg-table-cell">{{ o.total_livre }}</td>
-            <td class="d-none d-lg-table-cell">{{ o.reste }}</td>
-
+            <td>{{ o.total_livre }}</td>
+            <td>{{ o.reste }}</td>
+            {% if current_user.role == 'admin' %}
             <td class="text-center">
               <div class="actions-cell">
-                <a href="{{ url_for('order_delivery', order_id=o.num_reservation) }}"
-                   class="btn btn-sm btn-subtle"
+                <a href="{{ url_for('order_delivery', order_id=o.num_reservation) }}" 
+                   class="btn btn-sm btn-subtle" 
                    title="Voir livraisons">
                   <i class="bi bi-eye"></i>
                 </a>
               </div>
             </td>
+            {% endif %}
           </tr>
           {% endfor %}
         </tbody>

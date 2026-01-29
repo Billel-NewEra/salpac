@@ -2,7 +2,7 @@
 {% block title %}Commandes – {{ client.company_name }}{% endblock %}
 {% block content %}
 
-<h4 class="mb-3">Commandes du client « {{ client.company_name }} »</h4>
+<h4 class="mb-3">📦 Commandes du client « {{ client.company_name }} »</h4>
 
 <div class="card widget" id="clientOrdersCard">
   <div class="card-body p-2">
@@ -10,47 +10,23 @@
       <table class="table table-dark table-compact table-striped table-borderless align-middle">
         <thead>
           <tr>
-            <!-- Cmd : desktop uniquement -->
-            <th class="d-none d-md-table-cell">Cmd</th>
-
-            <!-- CMDCL : desktop uniquement -->
-            <th class="d-none d-md-table-cell">CMDCL</th>
-
+            <th>Cmd</th>
+            <th>CMDCL</th>
             <th>Produit</th>
             <th class="text-end">Quantité</th>
             <th>Statut</th>
-
-            <!-- Livré / Reste : desktop uniquement -->
-            <th class="text-end d-none d-md-table-cell">Livré</th>
-            <th class="text-end d-none d-md-table-cell">Reste</th>
-
+            <th class="text-end">Livré</th>
+            <th class="text-end">Reste</th>
             <th class="text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for o in orders %}
           <tr>
-            <!-- Cmd -->
-            <td class="d-none d-md-table-cell">
-              {{ o.num_reservation }}
-            </td>
-
-            <!-- CMDCL -->
-            <td class="d-none d-md-table-cell">
-              {{ o.cmdl }}
-            </td>
-
-            <!-- Produit -->
-            <td>
-              {{ o.produit }}
-            </td>
-
-            <!-- Quantité -->
-            <td class="text-end">
-              {{ o.qte }}
-            </td>
-
-            <!-- Statut -->
+            <td>{{ o.num_reservation }}</td>
+            <td>{{ o.cmdl }}</td>
+            <td>{{ o.produit }}</td>
+            <td class="text-end">{{ o.qte }}</td>
             <td>
               {% if o.situation == "LIVREE" %}
                 <span class="badge bg-success-subtle text-success border-success-subtle">Livrée</span>
@@ -59,32 +35,19 @@
               {% elif o.situation == "EN COURS" %}
                 <span class="badge bg-warning-subtle text-warning border-warning-subtle">En cours</span>
               {% else %}
-                <span class="badge bg-secondary-subtle text-secondary border-secondary-subtle">
-                  {{ o.situation }}
-                </span>
+                <span class="badge bg-secondary-subtle text-secondary border-secondary-subtle">{{ o.situation }}</span>
               {% endif %}
             </td>
-
-            <!-- Livré -->
-            <td class="text-end d-none d-md-table-cell">
-              {{ o.total_livre }}
-            </td>
-
-            <!-- Reste -->
-            <td class="text-end d-none d-md-table-cell">
-              {{ o.reste }}
-            </td>
-
-            <!-- Actions -->
+            <td class="text-end">{{ o.total_livre }}</td>
+            <td class="text-end">{{ o.reste }}</td>
             <td class="text-center">
               <div class="actions-cell">
                 <a href="{{ url_for('order_delivery',
                     order_id=o.num_reservation,
                     client_id=client.id,
                     page=request.args.get('page', 1)
-                ) }}"
-                   class="btn btn-sm btn-subtle"
-                   title="Voir livraisons">
+                ) }}" 
+                class="btn btn-sm btn-subtle" title="Voir livraisons">
                   <i class="bi bi-eye"></i>
                 </a>
               </div>
@@ -105,8 +68,7 @@
     {% include 'pagination.html' %}
 
     <a href="{{ url_for('clients', page=request.args.get('page', 1)) }}"
-       class="btn-return-circle mt-3"
-       title="Retour">
+       class="btn-return-circle mt-3" title="Retour">
       <i class="bi bi-arrow-left"></i>
     </a>
   </div>

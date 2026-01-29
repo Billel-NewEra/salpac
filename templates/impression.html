@@ -2,7 +2,7 @@
 {% block title %}Atelier – Impression{% endblock %}
 {% block content %}
 
-<h4 class="mb-3">🖨️ Impressions</h4>
+<h4 class="mb-3">Impressions</h4>
 
 <form method="get" action="{{ url_for('impression') }}" class="mb-3">
   <input type="hidden" name="page" value="{{ page }}">
@@ -67,40 +67,75 @@
       <table class="table table-dark table-compact table-striped table-borderless align-middle">
         <thead>
           <tr>
-            <th>Tirage</th>
+            <th class="d-none d-md-table-cell">Tirage</th>
             <th>Date</th>
             <th>HR</th>
-            <th>Commande</th>
-            <th>Machine</th>
+            <th class="d-none d-md-table-cell">Commande</th>
+            <th class="d-none d-md-table-cell">Machine</th>
             <th>Article</th>
-            <th class="text-end">Feuilles</th>
-            <th class="text-end">Étuis</th>
+            <th class="text-end d-none d-md-table-cell">Feuilles</th>
+            <th class="text-end d-none d-md-table-cell">Étuis</th>
             <th>Utilisateur</th>
           </tr>
         </thead>
         <tbody>
-          {% if impression %}
-            {% for i in impression %}
-            <tr>
-              <td>{{ i.num_impression }}</td>
-              <td>{{ i.date_impression[:10] }}</td>
-              <td>{{ i.hr }}</td>
-              <td>{{ i.num_commande }}</td>
-              <td>{{ i.machine }}</td>
-              <td>{{ i.article }}</td>
-              <td class="text-end">{{ i.feuilles }}</td>
-              <td class="text-end">{{ i.etuis }}</td>
-              <td>{{ i.user }}</td>
-            </tr>
-            {% endfor %}
-          {% else %}
-            <tr>
-              <td colspan="9" class="text-center text-secondary py-3">
-                <i class="bi bi-info-circle me-1"></i> Aucune impression trouvée
-              </td>
-            </tr>
-          {% endif %}
-        </tbody>
+  {% if impression %}
+    {% for i in impression %}
+    <tr>
+      <!-- Tirage -->
+      <td class="d-none d-md-table-cell">
+        {{ i.num_impression }}
+      </td>
+
+      <!-- Date -->
+      <td>
+        {{ i.date_impression[:10] }}
+      </td>
+
+      <!-- HR -->
+      <td>
+        {{ i.hr }}
+      </td>
+
+      <!-- Commande -->
+      <td class="d-none d-md-table-cell">
+        {{ i.num_commande }}
+      </td>
+
+      <!-- Machine -->
+      <td class="d-none d-md-table-cell">
+        {{ i.machine }}
+      </td>
+
+      <!-- Article -->
+      <td>
+        {{ i.article }}
+      </td>
+
+      <!-- Feuilles -->
+      <td class="text-end d-none d-md-table-cell">
+        {{ i.feuilles }}
+      </td>
+
+      <!-- Étuis -->
+      <td class="text-end d-none d-md-table-cell">
+        {{ i.etuis }}
+      </td>
+
+      <!-- Utilisateur -->
+      <td>
+        {{ i.user }}
+      </td>
+    </tr>
+    {% endfor %}
+  {% else %}
+    <tr>
+      <td colspan="9" class="text-center text-secondary py-3">
+        <i class="bi bi-info-circle me-1"></i> Aucune impression trouvée
+      </td>
+    </tr>
+  {% endif %}
+</tbody>
       </table>
     </div>
 

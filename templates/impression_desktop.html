@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Atelier – Pliage{% endblock %}
+{% block title %}Atelier – Impression{% endblock %}
 {% block content %}
 
-<h4 class="mb-3">Pliages</h4>
+<h4 class="mb-3">🖨️ Impressions</h4>
 
-<form method="get" action="{{ url_for('pliage') }}" class="mb-3">
+<form method="get" action="{{ url_for('impression') }}" class="mb-3">
   <input type="hidden" name="page" value="{{ page }}">
   <div class="row g-2 align-items-end">
 
@@ -38,6 +38,7 @@
     <div class="col-md">
       <label for="user_filter" class="form-label fw-semibold">👤 Utilisateur</label>
       <select id="user_filter" name="user" class="form-select">
+        <!-- option vide pour Select2 + allowClear -->
         <option value="">Tous</option>
         {% for u in users %}
           <option value="{{ u }}" {% if user == u %}selected{% endif %}>{{ u }}</option>
@@ -49,7 +50,8 @@
     <div class="col-md">
       <label for="article_filter" class="form-label fw-semibold">🏷️ Article</label>
       <select id="article_filter" name="article" class="form-select">
-        <option value="">Tous</option>
+        <!-- option vide pour Select2 -->
+        <option value=""></option>
         {% for a in articles %}
           <option value="{{ a }}" {% if article == a %}selected{% endif %}>{{ a }}</option>
         {% endfor %}
@@ -65,88 +67,53 @@
       <table class="table table-dark table-compact table-striped table-borderless align-middle">
         <thead>
           <tr>
-            <th class="d-none d-md-table-cell">N° Pliage</th>
-            <th class="d-none d-md-table-cell">N° Découpage</th>
+            <th>Tirage</th>
             <th>Date</th>
             <th>HR</th>
-            <th class="d-none d-md-table-cell">N° Commande</th>
-            <th class="d-none d-md-table-cell">Maquette</th>
+            <th>Commande</th>
+            <th>Machine</th>
             <th>Article</th>
-            <th class="text-end d-none d-md-table-cell">Étuis</th>
+            <th class="text-end">Feuilles</th>
+            <th class="text-end">Étuis</th>
             <th>Utilisateur</th>
           </tr>
         </thead>
         <tbody>
-          {% if pliage %}
-          {% for p in pliage %}
-          <tr>
-            <!-- N° Pliage -->
-            <td class="d-none d-md-table-cell">
-              {{ p.num_pliage }}
-            </td>
-          
-            <!-- N° Découpage -->
-            <td class="d-none d-md-table-cell">
-              {{ p.num_decoupage }}
-            </td>
-          
-            <!-- Date -->
-            <td>
-              {{ p.date_pliage[:10] }}
-            </td>
-          
-            <!-- HR -->
-            <td>
-              {{ p.hr }}
-            </td>
-          
-            <!-- N° Commande -->
-            <td class="d-none d-md-table-cell">
-              {{ p.num_commande }}
-            </td>
-          
-            <!-- Maquette -->
-            <td class="d-none d-md-table-cell">
-              {{ p.maquette_id }}
-            </td>
-          
-            <!-- Article -->
-            <td>
-              {{ p.description }}
-            </td>
-          
-            <!-- Étuis -->
-            <td class="text-end d-none d-md-table-cell">
-              {{ p.qte_pli }}
-            </td>
-          
-            <!-- Utilisateur -->
-            <td>
-              {{ p.user }}
-            </td>
-          </tr>
-          {% endfor %}
+          {% if impression %}
+            {% for i in impression %}
+            <tr>
+              <td>{{ i.num_impression }}</td>
+              <td>{{ i.date_impression[:10] }}</td>
+              <td>{{ i.hr }}</td>
+              <td>{{ i.num_commande }}</td>
+              <td>{{ i.machine }}</td>
+              <td>{{ i.article }}</td>
+              <td class="text-end">{{ i.feuilles }}</td>
+              <td class="text-end">{{ i.etuis }}</td>
+              <td>{{ i.user }}</td>
+            </tr>
+            {% endfor %}
           {% else %}
-          <tr>
-            <td colspan="9" class="text-center text-secondary py-3">
-              <i class="bi bi-info-circle me-1"></i> Aucun pliage trouvé
-            </td>
-          </tr>
+            <tr>
+              <td colspan="9" class="text-center text-secondary py-3">
+                <i class="bi bi-info-circle me-1"></i> Aucune impression trouvée
+              </td>
+            </tr>
           {% endif %}
         </tbody>
       </table>
     </div>
 
-    <!-- pagination + résumé -->
     <p class="text-secondary text-center small">
-      Affichage {{ start_idx }} – {{ end_idx }} sur {{ total }} pliages
+      Affichage {{ start_idx }} – {{ end_idx }} sur {{ total }} impressions
     </p>
 
     <p class="text-secondary text-end small">
-      <strong>Total Étuis :</strong> {{ total_qte }}
+      <strong>Total feuilles :</strong> {{ total_feuilles }} —
+      <strong>Total étuis :</strong> {{ total_etuis }}
     </p>
 
-    {% set endpoint = 'pliage' %}
+    {% set endpoint = 'impression' %}
     {% set params = {
       'period': period,
       'start': start,
@@ -162,7 +129,10 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <!-- Select2 -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+<link
+  href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+  rel="stylesheet"
+/>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
@@ -177,14 +147,16 @@ document.addEventListener("DOMContentLoaded", function () {
     dateEnd.style.display = show ? "block" : "none";
   }
 
-  toggleDateFields();
-
   periodSelect.addEventListener("change", function () {
     toggleDateFields();
     document.querySelector('input[name="page"]').value = 1;
     this.form.submit();
   });
 
+  // au chargement
+  toggleDateFields();
+
+  // dates -> submit + page=1
   document.querySelectorAll('input[type="date"]').forEach((el) => {
     el.addEventListener("change", function () {
       document.querySelector('input[name="page"]').value = 1;
@@ -192,7 +164,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // Select2 Utilisateur
+  // --- Select2 Utilisateur ---
   const $user = $("#user_filter").select2({
     placeholder: "Tous",
     allowClear: true,
@@ -200,7 +172,7 @@ document.addEventListener("DOMContentLoaded", function () {
     minimumResultsForSearch: 0
   });
 
-  // Select2 Article
+  // --- Select2 Article ---
   const $article = $("#article_filter").select2({
     placeholder: "Tous",
     allowClear: true,
@@ -208,16 +180,18 @@ document.addEventListener("DOMContentLoaded", function () {
     minimumResultsForSearch: 0
   });
 
+  // focus dans la barre de recherche à l'ouverture
   $(document).on("select2:open", function () {
     const el = document.querySelector(".select2-container--open .select2-search__field");
     if (el) el.focus();
   });
 
-  function submitFilters(el) {
+  function submitFilters(selectElement) {
     document.querySelector('input[name="page"]').value = 1;
-    el.form.submit();
+    selectElement.form.submit();
   }
 
+  // changement de valeur (sélection OU clear manuel)
   $user.on("change select2:clear", function () {
     submitFilters(this);
   });

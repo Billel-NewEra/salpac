@@ -2,7 +2,7 @@
 {% block title %}Livraisons – Commande {{ order_id }}{% endblock %}
 {% block content %}
 
-<h2 class="mb-4">Livraisons de la commande n° {{ order_id }}</h2>
+<h2 class="mb-4">🚚 Livraisons de la commande n° {{ order_id }}</h2>
 
 <div class="card widget" id="orderDeliveryCard">
   <div class="card-body p-2">
@@ -10,62 +10,27 @@
       <table class="table table-dark table-compact table-striped table-borderless align-middle">
         <thead>
           <tr>
-            <!-- NL : desktop uniquement -->
-            <th class="d-none d-md-table-cell">NL</th>
-
-            {% if current_user.role == 'admin' %}
+            <th>NL</th>
             <th>Client</th>
-            {% endif %}
             <th>Produit</th>
-
             <th class="text-end">Quantité</th>
-
-            <!-- Date : toujours visible -->
             <th>Date livraison</th>
-
-            <!-- Observation : desktop uniquement -->
-            <th class="d-none d-md-table-cell">Observation</th>
+            <th>Observation</th>
           </tr>
         </thead>
         <tbody>
           {% for d in delivery %}
           <tr>
-            <!-- NL -->
-            <td class="d-none d-md-table-cell">
-              {{ d.nl }}
-            </td>
-
-            <!-- Client -->
-            {% if current_user.role == 'admin' %}
-            <td>
-              {{ d.client }}
-            </td>
-            {% endif %}
-
-            <!-- Produit -->
-            <td>
-              {{ d.produit }}
-            </td>
-
-            <!-- Quantité -->
-            <td class="text-end">
-              {{ d.qte }}
-            </td>
-
-            <!-- Date -->
+            <td>{{ d.nl }}</td>
+            <td>{{ d.client }}</td>
+            <td>{{ d.produit }}</td>
+            <td class="text-end">{{ d.qte }}</td>
             <td>
               {% if d.date_livraison %}
-                {{ d.date_livraison.strftime('%d/%m/%Y')
-                   if d.date_livraison.__class__.__name__ != 'str'
-                   else d.date_livraison }}
+                {{ d.date_livraison.strftime('%d/%m/%Y') if d.date_livraison.__class__.__name__ != 'str' else d.date_livraison }}
               {% endif %}
             </td>
-
-            <!-- Observation -->
-            <td class="d-none d-md-table-cell observation-cell"
-                title="{{ d.observation }}">
-              {{ d.observation }}
-            </td>
+            <td class="observation-cell" title="{{ d.observation }}">{{ d.observation }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -79,6 +44,7 @@
     {# === Pagination === #}
     {% set params = {'order_id': order_id} %}
 
+    {# Si la page contient un client_id, on le propage dans la pagination #}
     {% if request.args.get('client_id') %}
       {% set params = params.update({'client_id': request.args.get('client_id')}) or params %}
     {% endif %}
@@ -93,14 +59,12 @@
 
     {% if client_id %}
       <a href="{{ url_for('client_orders', client_id=client_id, page=page) }}"
-         class="btn-return-circle mt-3"
-         title="Retour aux commandes client">
+         class="btn-return-circle mt-3" title="Retour aux commandes client">
         <i class="bi bi-arrow-left"></i>
       </a>
     {% else %}
       <a href="{{ url_for('orders', page=page) }}"
-         class="btn-return-circle mt-3"
-         title="Retour aux commandes">
+         class="btn-return-circle mt-3" title="Retour aux commandes">
         <i class="bi bi-arrow-left"></i>
       </a>
     {% endif %}
