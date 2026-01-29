@@ -7,7 +7,7 @@ deployment:
     - /bin/rsync -a --delete $PWD/ $DEPLOYPATH
 
     # 3. Installer/mettre à jour les dépendances dans le virtualenv
-    - /home/mobibenz1/virtualenv/novoprint/3.9/bin/python3.9 -m pip install -r $DEPLOYPATH/requirements.txt
+    - /home/mobibenz1/virtualenv/salpac/3.9/bin/python3.9 -m pip install -r $DEPLOYPATH/requirements.txt
 
     # 4. Redémarrer l'application Passenger
     - touch $DEPLOYPATH/tmp/restart.txt
