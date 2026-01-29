@@ -174,6 +174,150 @@ def sync(access_path, sqlite_path):
         clean_row = tuple(float(x) if isinstance(x, decimal.Decimal) else x for x in row)
         cur_sql.execute("INSERT INTO delivery VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", clean_row)
 
+    
+    # ==============================
+    # TABLE impression (matérialisée)
+    # ==============================
+    cur_sql.execute("DROP TABLE IF EXISTS impressions")
+    cur_sql.execute("""
+        CREATE TABLE impressions (
+            num_impression INTEGER,
+            date_impression TEXT,
+            hr TEXT,
+            num_commande INTEGER,
+            machine TEXT,
+            article TEXT,
+            feuilles INTEGER,
+            etuis INTEGER,
+            user TEXT
+        )
+    """)
+
+    rows = cur_acc.execute("""
+        SELECT
+            IMPRESSION.NUM_IMPRESSION,
+            IMPRESSION.DATE_IMPRESSION,
+            FORMAT(IMPRESSION.DATE_IMPRESSION, 'hh:nn') AS HR,
+            IMPRESSION.NUM_COMMANDE,
+            IMPRESSION.MACHINE_ID,
+            MAQUETTE.DESCRIPTION,
+            IMPRESSION.NBR_F AS FEUILLES,
+            (IMPRESSION.NBR_F * MAQUETTE.POSE) AS ETUIS,
+            UTILISATEUR.NOM
+        FROM 
+            ((IMPRESSION 
+              INNER JOIN MAQUETTE ON IMPRESSION.MAQUETTE_ID = MAQUETTE.CODE_MAQUETTE)
+              INNER JOIN UTILISATEUR ON IMPRESSION.USER_ID = UTILISATEUR.[N°])
+        ORDER BY IMPRESSION.NUM_IMPRESSION DESC
+    """)
+
+    for row in rows:
+        clean_row = []
+        for x in row:
+            if isinstance(x, decimal.Decimal):
+                clean_row.append(float(x))
+            else:
+                clean_row.append(x)
+        cur_sql.execute("INSERT INTO impressions VALUES (?,?,?,?,?,?,?,?,?)", clean_row)
+
+
+    # ==============================
+    # TABLE matérialisée "decoupage"
+    # ==============================
+    cur_sql.execute("DROP TABLE IF EXISTS decoupage")
+    cur_sql.execute("""
+        CREATE TABLE decoupage (
+            num_decoupage INTEGER,
+            num_impression INTEGER,
+            date_decoupage TEXT,
+            hr TEXT,
+            num_commande INTEGER,
+            maquette_id INTEGER,
+            description TEXT,
+            feuilles INTEGER,
+            user TEXT
+        )
+    """)
+
+    rows = cur_acc.execute("""
+        SELECT 
+            D.NUM_DECOUPAGE,
+            I.NUM_IMPRESSION,
+            D.DATE_DECOUPAGE,
+            FORMAT(D.DATE_DECOUPAGE, 'hh:nn') AS HR,
+            I.NUM_COMMANDE,
+            I.MAQUETTE_ID,
+            M.DESCRIPTION,
+            D.NBR_FL_DCP,
+            U.NOM
+        FROM 
+            ((DECOUPAGE AS D
+            INNER JOIN (RESERVATION AS R
+                INNER JOIN IMPRESSION AS I
+                    ON R.NUM_RESERVATION = I.NUM_COMMANDE)
+                ON D.IMPRESSION_ID = I.NUM_IMPRESSION)
+            INNER JOIN MAQUETTE AS M
+                ON I.MAQUETTE_ID = M.CODE_MAQUETTE)
+            INNER JOIN UTILISATEUR AS U
+                ON D.USER_ID = U.[N°]
+    """)
+
+    for row in rows:
+        clean = tuple(row)
+        cur_sql.execute("INSERT INTO decoupage VALUES (?,?,?,?,?,?,?,?,?)", clean)
+
+
+    # ==============================
+    # TABLE matérialisée "pliage"
+    # ==============================
+    cur_sql.execute("DROP TABLE IF EXISTS pliage")
+    cur_sql.execute("""
+        CREATE TABLE pliage (
+            num_pliage INTEGER,
+            date_pliage TEXT,
+            hr TEXT,
+            num_decoupage INTEGER,
+            num_commande INTEGER,
+            maquette_id INTEGER,
+            description TEXT,
+            qte_pli INTEGER,
+            user TEXT
+        )
+    """)
+    
+    rows = cur_acc.execute("""
+        SELECT
+            PLIAGE.NUM_PLIAGE,
+            PLIAGE.DATE_PLIAGE,
+            FORMAT(PLIAGE.DATE_PLIAGE,'hh:nn') AS HR,
+            DECOUPAGE.NUM_DECOUPAGE,
+            IMPRESSION.NUM_COMMANDE,
+            IMPRESSION.MAQUETTE_ID,
+            MAQUETTE.DESCRIPTION,
+            PLIAGE.QTE_PLI,
+            UTILISATEUR.NOM
+        FROM UTILISATEUR
+        INNER JOIN (
+            PLIAGE
+            INNER JOIN (
+                (DECOUPAGE
+                INNER JOIN (RESERVATION
+                    INNER JOIN IMPRESSION
+                    ON RESERVATION.NUM_RESERVATION = IMPRESSION.NUM_COMMANDE)
+                ON DECOUPAGE.IMPRESSION_ID = IMPRESSION.NUM_IMPRESSION)
+                INNER JOIN MAQUETTE
+                ON IMPRESSION.MAQUETTE_ID = MAQUETTE.CODE_MAQUETTE)
+            ON PLIAGE.NUM_DECOUPAGE = DECOUPAGE.NUM_DECOUPAGE
+        )
+        ON UTILISATEUR.[N°] = PLIAGE.USER_ID
+    """)
+    
+    for row in rows:
+        clean = []
+        for x in row:
+            clean.append(float(x) if isinstance(x, decimal.Decimal) else x)
+        cur_sql.execute("INSERT INTO pliage VALUES (?,?,?,?,?,?,?,?,?)", clean)
+
     # ==============================
     # COMMIT & CLOSE
     # ==============================

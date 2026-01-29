@@ -42,8 +42,12 @@
             <td class="text-end">{{ o.reste }}</td>
             <td class="text-center">
               <div class="actions-cell">
-                <a href="{{ url_for('order_delivery', order_id=o.num_reservation, from_client=client.id) }}" 
-                   class="btn btn-sm btn-subtle" title="Voir livraisons">
+                <a href="{{ url_for('order_delivery',
+                    order_id=o.num_reservation,
+                    client_id=client.id,
+                    page=request.args.get('page', 1)
+                ) }}" 
+                class="btn btn-sm btn-subtle" title="Voir livraisons">
                   <i class="bi bi-eye"></i>
                 </a>
               </div>
@@ -63,9 +67,10 @@
     {% set target_anchor = 'clientOrdersCard' %}
     {% include 'pagination.html' %}
 
-    <a href="{{ url_for('clients') }}" class="btn-return-circle mt-3" title="Retour">
-    <i class="bi bi-arrow-left"></i>
-</a>
+    <a href="{{ url_for('clients', page=request.args.get('page', 1)) }}"
+       class="btn-return-circle mt-3" title="Retour">
+      <i class="bi bi-arrow-left"></i>
+    </a>
   </div>
 </div>
 

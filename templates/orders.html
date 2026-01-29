@@ -28,7 +28,6 @@
         <option value="EN COURS" {% if status == 'EN COURS' %}selected{% endif %}>En cours</option>
         <option value="LIVRAISON" {% if status == 'LIVRAISON' %}selected{% endif %}>Livraison</option>
         <option value="LIVREE" {% if status == 'LIVREE' %}selected{% endif %}>Livrée</option>
-        <option value="ANNULEE" {% if status == 'ANNULEE' %}selected{% endif %}>Annulée</option>
       </select>
     </div>
 
@@ -102,9 +101,7 @@
                 <span class="badge bg-success-subtle text-success border-success-subtle">Livrée</span>
               {% elif o.situation == 'LIVRAISON' %}
                 <span class="badge bg-info-subtle text-info border-info-subtle">Livraison</span>
-              {% elif o.situation == 'ANNULEE' %}
-                <span class="badge bg-danger-subtle text-danger border-danger-subtle">Annulée</span>
-              {% else %}
+              {% elif o.situation == 'EN COURS' %}
                 <span class="badge bg-warning-subtle text-warning border-warning-subtle">En cours</span>
               {% endif %}
             </td>

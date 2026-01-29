@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Impressions{% endblock %}
+{% block content %}
+
+<h4 class="mb-3">🖨️ Impressions</h4>
+
+<form method="get" action="{{ url_for('impression') }}" class="mb-3">
+  <input type="hidden" name="page" value="{{ page }}">
+  <div class="row g-2 align-items-end">
+
+    <!-- Filtre période -->
+    <div class="col-md">
+      <label class="form-label fw-semibold">📅 Période</label>
+      <select id="period" name="period" class="form-select">
+        <option value="all" {% if period == 'all' %}selected{% endif %}>Toutes</option>
+        <option value="today" {% if period == 'today' %}selected{% endif %}>Aujourd'hui</option>
+        <option value="yesterday" {% if period == 'yesterday' %}selected{% endif %}>Hier</option>
+        <option value="week" {% if period == 'week' %}selected{% endif %}>Semaine en cours</option>
+        <option value="month" {% if period == 'month' %}selected{% endif %}>Mois en cours</option>
+        <option value="year" {% if period == 'year' %}selected{% endif %}>Année en cours</option>
+        <option value="custom" {% if period == 'custom' %}selected{% endif %}>Plage personnalisée</option>
+      </select>
+    </div>
+
+    <!-- Plage personnalisée : Date Début -->
+    <div class="col-md date-start">
+      <label class="form-label">Début</label>
+      <input type="date" name="start" value="{{ start }}" class="form-control">
+    </div>
+
+    <!-- Plage personnalisée : Date Fin -->
+    <div class="col-md date-end">
+      <label class="form-label">Fin</label>
+      <input type="date" name="end" value="{{ end }}" class="form-control">
+    </div>
+
+    <!-- Filtre utilisateur -->
+    <div class="col-md">
+      <label for="user_filter" class="form-label fw-semibold">👤 Utilisateur</label>
+      <select id="user_filter" name="user" class="form-select">
+        <option value="" {% if user == "" %}selected{% endif %}>Tous</option>
+        {% for u in users %}
+          <option value="{{ u }}" {% if user == u %}selected{% endif %}>{{ u }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Filtre article -->
+    <div class="col-md">
+      <label for="article_filter" class="form-label fw-semibold">🏷️ Article</label>
+      <select id="article_filter" name="article" class="form-select">
+        <option value="" {% if article == "" %}selected{% endif %}>Tous</option>
+        {% for a in articles %}
+          <option value="{{ a }}" {% if article == a %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+  </div>
+</form>
+
+<div class="card widget">
+  <div class="card-body p-2">
+    <table class="table table-dark table-compact table-striped table-borderless align-middle">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Date</th>
+          <th>HR</th>
+          <th>Commande</th>
+          <th>Machine</th>
+          <th>Article</th>
+          <th class="text-end">Feuilles</th>
+          <th class="text-end">Etuis</th>
+          <th>Utilisateur</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in impression %}
+        <tr>
+          <td>{{ i.num_impression }}</td>
+          <td>{{ i.date_impression[:10] }}</td>
+          <td>{{ i.hr }}</td>
+          <td>{{ i.num_commande }}</td>
+          <td>{{ i.machine }}</td>
+          <td>{{ i.article }}</td>
+          <td class="text-end">{{ i.feuilles }}</td>
+          <td class="text-end">{{ i.etuis }}</td>
+          <td>{{ i.user }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <p class="text-secondary text-center small">
+       Affichage {{ start_idx }} – {{ end_idx }} sur {{ total }}
+    </p>
+
+    <p class="text-secondary text-end small">
+      <strong>Total Feuilles:</strong> {{ total_feuilles }} —
+      <strong>Total Etuis:</strong> {{ total_etuis }}
+    </p>
+
+    {% set endpoint='impression' %}
+    {% set params={'period':period,'start':start,'end':end,'article':article,'user':user} %}
+    {% include 'pagination.html' %}
+
+  </div>
+</div>
+
+<!-- jQuery obligatoire -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  const period = document.getElementById("period");
+  const dateStart = document.querySelector(".date-start");
+  const dateEnd = document.querySelector(".date-end");
+
+  function toggleDateFields() {
+    const show = (period.value === "custom");
+    dateStart.style.display = show ? "block" : "none";
+    dateEnd.style.display = show ? "block" : "none";
+  }
+
+  period.addEventListener("change", toggleDateFields);
+  toggleDateFields(); // obligatoire au chargement
+
+  // Reset pagination sur changement
+  document.querySelectorAll('select, input').forEach(el => {
+    el.addEventListener('change', () => {
+      document.querySelector('input[name="page"]').value = 1;
+      el.form.submit();
+    });
+  });
+
+  // Select2 Utilisateur
+  $('#user_filter').select2({
+    placeholder: "Rechercher un utilisateur...",
+    allowClear: true,
+    width: 'resolve',
+    minimumResultsForSearch: 0
+  });
+
+  // Select2 Article
+  $('#article_filter').select2({
+    placeholder: "Rechercher un article...",
+    allowClear: true,
+    width: 'resolve',
+    minimumResultsForSearch: 0
+  });
+
+  // Focus automatique sur le champ de recherche Select2
+  $(document).on('select2:open', function() {
+    document.querySelector('.select2-search__field').focus();
+  });
+
+});
+</script>
+
+{% endblock %}

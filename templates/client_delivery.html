@@ -48,7 +48,8 @@
     {% set target_anchor = 'clientDeliveryCard' %}
     {% include 'pagination.html' %}
 
-    <a href="{{ url_for('clients') }}" class="btn-return-circle mt-3" title="Retour">
+    <a href="{{ url_for('clients', page=request.args.get('page', 1)) }}"
+       class="btn-return-circle mt-3" title="Retour">
       <i class="bi bi-arrow-left"></i>
     </a>
   </div>

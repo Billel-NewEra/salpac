@@ -29,7 +29,7 @@
   {% if current_user.role == 'admin' %}
 <!-- Clients actifs (compact comme Livraisons) -->
 <!-- Clients actifs (ajusté et espacé) -->
-<div class="col-md-4">
+<div class="col-12 col-md-4">
   <div class="tile2 tile-with-icon-right tile-purple shadow-sm">
     <div class="tile-content">
       <div class="tile-title">Clients actifs</div>
@@ -44,7 +44,7 @@
   {% endif %}
 
 <!-- Commandes -->
-<div class="col-md-4">
+<div class="col-12 col-md-4">
   <div class="tile-command">
     <div class="d-flex flex-column">
       <div class="fw-semibold mb-3">
@@ -88,7 +88,7 @@
 </div>
 
   <!-- Livraisons -->
-  <div class="col-md-4">
+<div class="col-12 col-md-4">
   <div class="tile-delivery shadow-sm">
     <div class="tile-content">
       <div class="tile-title">Livraisons</div>
@@ -102,7 +102,7 @@
 <!-- Graph -->
 <div class="row g-4 mt-2">
   <!-- Graph -->
-  <div class="col-lg-6 col-md-6">
+  <div class="col-12 col-md-6 col-lg-6">
     <div class="chart-card">
       <div class="chart-title">Répartition des commandes</div>
       <div id="ordersChartApex"></div>
@@ -111,7 +111,7 @@
 
   <!-- Évolution des commandes -->
   
-    <div class="col-lg-6 col-md-6">
+    <div class="col-12 col-md-6 col-lg-6">
       <div class="chart-card">
         <div class="chart-title">Évolution des commandes</div>
         <div id="chartOrdersEvolution"></div>
@@ -119,7 +119,7 @@
     </div>
 
   <!-- Commandes par client --> 
-    <div class="col-lg-6 col-md-6">
+    <div class="col-12 col-md-6 col-lg-6">
       <div class="chart-card">
         <div class="chart-title">Commandes par client</div>
         <div id="chartOrdersByClient"></div>
@@ -127,7 +127,7 @@
     </div>
 
     <!-- Produits les plus livrés -->
-    <div class="col-lg-6 col-md-6">
+    <div class="col-12 col-md-6 col-lg-6">
       <div class="chart-card">
         <div class="chart-title">Produits les plus livrés</div>
         <div id="chartTopProducts"></div>
@@ -135,7 +135,7 @@
     </div>
 
     <!-- Activité par jour de la semaine -->
-    <div class="col-lg-6 col-md-6">
+    <div class="col-12 col-md-6 col-lg-6">
       <div class="chart-card">
         <div class="chart-title">Activités de la semaine</div>
         <div id="chartWeekActivity"></div>
@@ -189,6 +189,17 @@ document.addEventListener('DOMContentLoaded', function () {
       height: 295,
       animations: { enabled: true, speed: 900, animateGradually: { enabled: true, delay: 150 } } 
     },
+    responsive: [{
+  breakpoint: 768,
+  options: {
+    chart: {
+      height: 220
+    },
+    legend: {
+      position: 'bottom'
+    }
+  }
+}],
     series: seriesData,
     labels,
     colors,
@@ -232,6 +243,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const options = {
     chart: { type: 'line', height: 280, toolbar: { show: false }, background: 'transparent' },
+    responsive: [{
+  breakpoint: 768,
+  options: {
+    chart: {
+      height: 220
+    },
+    legend: {
+      position: 'bottom'
+    }
+  }
+}],
     series: [{ name: 'Commandes', data: counts }],
     xaxis: {
       categories: months,
@@ -263,6 +285,17 @@ document.addEventListener('DOMContentLoaded', function () {
       toolbar: { show: false },
       background: 'transparent'
     },
+    responsive: [{
+  breakpoint: 768,
+  options: {
+    chart: {
+      height: 220
+    },
+    legend: {
+      position: 'bottom'
+    }
+  }
+}],
     series: [{ name: 'Commandes', data: counts }],
     xaxis: { 
       categories: clients,
@@ -310,6 +343,17 @@ document.addEventListener('DOMContentLoaded', function () {
       toolbar: { show: false },
       background: 'transparent'
     },
+    responsive: [{
+  breakpoint: 768,
+  options: {
+    chart: {
+      height: 220
+    },
+    legend: {
+      position: 'bottom'
+    }
+  }
+}],
     series: [{
       name: 'Livraisons',
       data: counts
@@ -378,6 +422,17 @@ document.addEventListener('DOMContentLoaded', function () {
         animateGradually: { enabled: true, delay: 120 }
       }
     },
+    responsive: [{
+  breakpoint: 768,
+  options: {
+    chart: {
+      height: 220
+    },
+    legend: {
+      position: 'bottom'
+    }
+  }
+}],
     series: [{
       name: 'Commandes',
       data: counts

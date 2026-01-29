@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+import calendar
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
     login_required, current_user
@@ -872,15 +873,353 @@ def delete_user(user_id):
     flash("✅ Utilisateur supprimé avec succès", "success")
     return redirect(url_for("list_users"))
 
-@app.route('/impressions')
-@login_required
-def impressions():
-    return render_template('impressions.html')
 
-@app.route('/decoupes')
+@app.route("/impression")
 @login_required
-def decoupes():
-    return render_template('decoupes.html')
+def impression():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # ---- récup filtres ----
+    period = request.args.get("period", "all")
+    article = (request.args.get("article") or "").strip()
+    user = (request.args.get("user") or "").strip()
+    start = request.args.get("start") or ""
+    end = request.args.get("end") or ""
+
+    # ---- pagination ----
+    page = request.args.get("page", 1, type=int)
+    per_page = 20
+    offset = (page - 1) * per_page
+
+    today = date.today()
+
+    def period_bounds(period, start, end):
+        if period == "all":
+            return None, None
+        if period == "today":
+            return today, today
+        if period == "yesterday":
+            d = today - timedelta(days=1)
+            return d, d
+        if period == "week":
+            monday = today - timedelta(days=today.weekday())
+            sunday = monday + timedelta(days=6)
+            return monday, sunday
+        if period == "month":
+            first = today.replace(day=1)
+            last = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+            return first, last
+        if period == "year":
+            first = date(today.year, 1, 1)
+            last = date(today.year, 12, 31)
+            return first, last
+        if period == "custom" and start and end:
+            try:
+                return date.fromisoformat(start), date.fromisoformat(end)
+            except:
+                return None, None
+        return None, None
+
+    start_date, end_date = period_bounds(period, start, end)
+
+    # ---- requête ----
+    query = "SELECT num_impression, date_impression, hr, num_commande, machine, article, feuilles, etuis, user FROM impressions WHERE 1=1"
+    count_query = "SELECT COUNT(*) FROM impressions WHERE 1=1"
+    params = []
+    count_params = []
+
+    # filtre période
+    if start_date and end_date:
+        query += " AND date(date_impression) BETWEEN date(?) AND date(?)"
+        count_query += " AND date(date_impression) BETWEEN date(?) AND date(?)"
+        params.extend([start_date, end_date])
+        count_params.extend([start_date, end_date])
+
+    # filtre article
+    if article:
+        pattern = "%" + "%".join(article.split()) + "%"
+        query += " AND article LIKE ?"
+        count_query += " AND article LIKE ?"
+        params.append(pattern)
+        count_params.append(pattern)
+
+    # filtre utilisateur
+    if user:
+        pattern = "%" + "%".join(user.split()) + "%"
+        query += " AND user LIKE ?"
+        count_query += " AND user LIKE ?"
+        params.append(pattern)
+        count_params.append(pattern)
+
+    # tri + pagination
+    query += " ORDER BY date_impression DESC LIMIT ? OFFSET ?"
+    params.extend([per_page, offset])
+
+    rows = cur.execute(query, params).fetchall()
+    total = cur.execute(count_query, count_params).fetchone()[0]
+
+    # totals
+    total_feuilles = cur.execute("SELECT SUM(feuilles) FROM impressions").fetchone()[0] or 0
+    total_etuis = cur.execute("SELECT SUM(etuis) FROM impressions").fetchone()[0] or 0
+
+    # --- Récup listes uniques pour filtres ---
+    users = [r[0] for r in cur.execute("SELECT DISTINCT user FROM impressions ORDER BY user").fetchall()]
+    articles = [r[0] for r in cur.execute("SELECT DISTINCT article FROM impressions ORDER BY article").fetchall()]
+
+    conn.close()
+
+    total_pages = (total + per_page - 1) // per_page
+    start_idx = offset + 1 if total > 0 else 0
+    end_idx = min(offset + per_page, total)
+
+    return render_template(
+        "impression.html",
+        impression=rows,
+        period=period,
+        article=article,
+        user=user,
+        start=start,
+        end=end,
+        page=page,
+        total_pages=total_pages,
+        start_idx=start_idx,
+        end_idx=end_idx,
+        total=total,
+        total_feuilles=total_feuilles,
+        total_etuis=total_etuis,
+        users=users,
+        articles=articles,
+    )
+
+
+@app.route("/decoupe")
+@login_required
+def decoupe():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # ---- récup filtres ----
+    period = request.args.get("period", "all")
+    user = (request.args.get("user") or "").strip()
+    article = (request.args.get("article") or "").strip()
+    start = request.args.get("start") or ""
+    end = request.args.get("end") or ""
+
+    # ---- pagination ----
+    page = request.args.get("page", 1, type=int)
+    per_page = 20
+    offset = (page - 1) * per_page
+
+    today = date.today()
+
+    # ---- période ----
+    def get_bounds(period, start, end):
+        if period == "all": return None, None
+        if period == "today": return today, today
+        if period == "yesterday":
+            d = today - timedelta(days=1)
+            return d, d
+        if period == "week":
+            mon = today - timedelta(days=today.weekday())
+            sun = mon + timedelta(days=6)
+            return mon, sun
+        if period == "month":
+            first = today.replace(day=1)
+            last = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+            return first, last
+        if period == "year":
+            first = date(today.year, 1, 1)
+            last = date(today.year, 12, 31)
+            return first, last
+        if period == "custom" and start and end:
+            try:
+                return date.fromisoformat(start), date.fromisoformat(end)
+            except:
+                return None, None
+        return None, None
+
+    start_date, end_date = get_bounds(period, start, end)
+
+    # ---- construction requêtes ----
+    query = """
+        SELECT num_decoupage, num_impression, date_decoupage, hr,
+               num_commande, maquette_id, description, feuilles, user
+        FROM decoupage WHERE 1=1
+    """
+    count_query = "SELECT COUNT(*) FROM decoupage WHERE 1=1"
+    params = []
+    count_params = []
+
+    # période
+    if start_date and end_date:
+        query += " AND date(date_decoupage) BETWEEN date(?) AND date(?)"
+        count_query += " AND date(date_decoupage) BETWEEN date(?) AND date(?)"
+        params.extend([start_date, end_date])
+        count_params.extend([start_date, end_date])
+
+    # article
+    if article:
+        pattern = "%" + "%".join(article.split()) + "%"
+        query += " AND description LIKE ?"
+        count_query += " AND description LIKE ?"
+        params.append(pattern)
+        count_params.append(pattern)
+
+    # utilisateur
+    if user:
+        pattern = "%" + "%".join(user.split()) + "%"
+        query += " AND user LIKE ?"
+        count_query += " AND user LIKE ?"
+        params.append(pattern)
+        count_params.append(pattern)
+
+    # tri + pagination
+    query += " ORDER BY num_decoupage DESC LIMIT ? OFFSET ?"
+    params.extend([per_page, offset])
+
+    rows = cur.execute(query, params).fetchall()
+    total = cur.execute(count_query, count_params).fetchone()[0]
+
+    # total feuilles découpées
+    total_feuilles = cur.execute("SELECT SUM(feuilles) FROM decoupage").fetchone()[0] or 0
+
+    # listes distinctes pour Select2
+    users = [r[0] for r in cur.execute("SELECT DISTINCT user FROM decoupage ORDER BY user").fetchall()]
+    articles = [r[0] for r in cur.execute("SELECT DISTINCT description FROM decoupage ORDER BY description").fetchall()]
+
+    conn.close()
+
+    total_pages = (total + per_page - 1) // per_page
+    start_idx = offset + 1 if total > 0 else 0
+    end_idx = min(offset + per_page, total)
+
+    return render_template(
+        "decoupe.html",
+        decoupage=rows,
+        period=period,
+        user=user,
+        article=article,
+        start=start,
+        end=end,
+        page=page,
+        total_pages=total_pages,
+        start_idx=start_idx,
+        end_idx=end_idx,
+        total=total,
+        total_feuilles=total_feuilles,
+        users=users,
+        articles=articles
+    )
+
+@app.route("/pliage")
+@login_required
+def pliage():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Filtres
+    period = request.args.get("period", "all")
+    user = (request.args.get("user") or "").strip()
+    article = (request.args.get("article") or "").strip()
+    start = request.args.get("start") or ""
+    end = request.args.get("end") or ""
+
+    # Pagination
+    page = request.args.get("page", 1, type=int)
+    per_page = 20
+    offset = (page - 1) * per_page
+
+    today = date.today()
+
+    def period_bounds(period, start, end):
+        if period == "all": return None, None
+        if period == "today": return today, today
+        if period == "yesterday":
+            d = today - timedelta(days=1)
+            return d, d
+        if period == "week":
+            mon = today - timedelta(days=today.weekday())
+            sun = mon + timedelta(days=6)
+            return mon, sun
+        if period == "month":
+            first = today.replace(day=1)
+            last = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+            return first, last
+        if period == "year":
+            first = date(today.year, 1, 1)
+            last = date(today.year, 12, 31)
+            return first, last
+        if period == "custom" and start and end:
+            try:
+                return date.fromisoformat(start), date.fromisoformat(end)
+            except:
+                return None, None
+        return None, None
+
+    start_date, end_date = period_bounds(period, start, end)
+
+    # Base query
+    query = "SELECT * FROM pliage WHERE 1=1"
+    params = []
+
+    # Date filter
+    if start_date and end_date:
+        query += " AND date(date_pliage) BETWEEN date(?) AND date(?)"
+        params += [start_date, end_date]
+
+    # User filter
+    if user:
+        pattern = "%" + "%".join(user.split()) + "%"
+        query += " AND user LIKE ?"
+        params.append(pattern)
+
+    # Article filter
+    if article:
+        pattern = "%" + "%".join(article.split()) + "%"
+        query += " AND description LIKE ?"
+        params.append(pattern)
+
+    # Count
+    count_q = "SELECT COUNT(*) FROM (" + query + ")"
+    total = cur.execute(count_q, params).fetchone()[0]
+
+    # Pagination
+    query += " ORDER BY date_pliage DESC LIMIT ? OFFSET ?"
+    params += [per_page, offset]
+
+    rows = cur.execute(query, params).fetchall()
+
+    # Totaux
+    total_qte = cur.execute("SELECT SUM(qte_pli) FROM pliage").fetchone()[0] or 0
+
+    # Filtres distincts
+    users = [r[0] for r in cur.execute("SELECT DISTINCT user FROM pliage ORDER BY user").fetchall()]
+    articles = [r[0] for r in cur.execute("SELECT DISTINCT description FROM pliage ORDER BY description").fetchall()]
+
+    conn.close()
+
+    total_pages = (total + per_page - 1) // per_page
+    start_idx = offset + 1 if total > 0 else 0
+    end_idx = min(offset + per_page, total)
+
+    return render_template(
+        "pliage.html",
+        pliage=rows,
+        period=period,
+        user=user,
+        article=article,
+        start=start,
+        end=end,
+        page=page,
+        total_pages=total_pages,
+        start_idx=start_idx,
+        end_idx=end_idx,
+        total=total,
+        total_qte=total_qte,
+        users=users,
+        articles=articles
+    )
 
 if __name__ == "__main__":
     app.run(debug=True, port=8888)

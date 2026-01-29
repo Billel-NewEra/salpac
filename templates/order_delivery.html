@@ -41,23 +41,30 @@
       Affichage {{ start }} – {{ end }} sur {{ total_delivery }} livraisons
     </p>
 
-    <!-- Pagination (préserve from_client) -->
+    {# === Pagination === #}
     {% set params = {'order_id': order_id} %}
-    {% if from_client %}
-      {% set params = params.update({'from_client': from_client}) or params %}
+
+    {# Si la page contient un client_id, on le propage dans la pagination #}
+    {% if request.args.get('client_id') %}
+      {% set params = params.update({'client_id': request.args.get('client_id')}) or params %}
     {% endif %}
 
     {% set endpoint = 'order_delivery' %}
     {% set target_anchor = 'orderDeliveryCard' %}
     {% include 'pagination.html' %}
 
-    <!-- Retour contextuel -->
-    {% if from_client %}
-      <a href="{{ url_for('client_orders', client_id=from_client) }}" class="btn-return-circle mt-3" title="Retour">
+    {# === Bouton Retour === #}
+    {% set page = request.args.get('page', 1) %}
+    {% set client_id = request.args.get('client_id') %}
+
+    {% if client_id %}
+      <a href="{{ url_for('client_orders', client_id=client_id, page=page) }}"
+         class="btn-return-circle mt-3" title="Retour aux commandes client">
         <i class="bi bi-arrow-left"></i>
       </a>
     {% else %}
-      <a href="{{ url_for('orders') }}" class="btn-return-circle mt-3" title="Retour">
+      <a href="{{ url_for('orders', page=page) }}"
+         class="btn-return-circle mt-3" title="Retour aux commandes">
         <i class="bi bi-arrow-left"></i>
       </a>
     {% endif %}

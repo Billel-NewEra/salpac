@@ -28,13 +28,13 @@
             <td>{{ c.email }}</td>
             <td class="text-center">
               <div class="actions-cell">
-                <a href="{{ url_for('client_orders', client_id=c.id) }}" 
-                   class="btn btn-sm btn-subtle" 
+                <a href="{{ url_for('client_orders', client_id=c.id, page=page) }}" 
+                   class="btn btn-sm btn-subtle"
                    title="Voir commandes">
                   <i class="bi bi-box-seam"></i>
                 </a>
-                <a href="{{ url_for('client_delivery', client_id=c.id) }}" 
-                   class="btn btn-sm btn-subtle" 
+                <a href="{{ url_for('client_delivery', client_id=c.id, page=page) }}" 
+                   class="btn btn-sm btn-subtle"
                    title="Voir livraisons">
                   <i class="bi bi-truck"></i>
                 </a>

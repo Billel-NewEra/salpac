@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Atelier – Découpage{% endblock %}
+{% block content %}
+
+<h4 class="mb-3">✂️ Découpages</h4>
+
+<form method="get" action="{{ url_for('decoupe') }}" class="mb-3">
+  <input type="hidden" name="page" value="{{ page }}">
+
+  <div class="row g-2 align-items-end">
+
+    <!-- Filtre période -->
+    <div class="col-md">
+      <label for="period" class="form-label fw-semibold">📅 Période</label>
+      <select id="period" name="period" class="form-select">
+        <option value="all" {% if period=='all' %}selected{% endif %}>Toutes</option>
+        <option value="today" {% if period=='today' %}selected{% endif %}>Aujourd'hui</option>
+        <option value="yesterday" {% if period=='yesterday' %}selected{% endif %}>Hier</option>
+        <option value="week" {% if period=='week' %}selected{% endif %}>Semaine en cours</option>
+        <option value="month" {% if period=='month' %}selected{% endif %}>Mois en cours</option>
+        <option value="year" {% if period=='year' %}selected{% endif %}>Année en cours</option>
+        <option value="custom" {% if period=='custom' %}selected{% endif %}>Plage personnalisée</option>
+      </select>
+    </div>
+
+    <!-- Date début -->
+    <div class="col-md date-start">
+      <label for="start" class="form-label">Début</label>
+      <input type="date" id="start" name="start" value="{{ start }}" class="form-control">
+    </div>
+
+    <!-- Date fin -->
+    <div class="col-md date-end">
+      <label for="end" class="form-label">Fin</label>
+      <input type="date" id="end" name="end" value="{{ end }}" class="form-control">
+    </div>
+
+    <!-- Filtre utilisateur -->
+    <div class="col-md">
+      <label for="user_filter" class="form-label fw-semibold">👤 Utilisateur</label>
+      <select id="user_filter" name="user" class="form-select">
+        <option value=""></option>
+        {% for u in users %}
+          <option value="{{ u }}" {% if user==u %}selected{% endif %}>{{ u }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Filtre article -->
+    <div class="col-md">
+      <label for="article_filter" class="form-label fw-semibold">🏷️ Article</label>
+      <select id="article_filter" name="article" class="form-select">
+        <option value=""></option>
+        {% for a in articles %}
+          <option value="{{ a }}" {% if article==a %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+  </div>
+</form>
+
+<div class="card widget">
+  <div class="card-body p-2">
+
+    <div class="table-responsive">
+      <table class="table table-dark table-compact table-striped table-borderless align-middle">
+        <thead>
+          <tr>
+            <th>N° Découpage</th>
+            <th>N° Tirage</th>
+            <th>Date Découpée</th>
+            <th>HR</th>
+            <th>N° Commande</th>
+            <th>Maquette</th>
+            <th>Article</th>
+            <th class="text-end">Feuilles</th>
+            <th>Utilisateur</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if decoupage %}
+            {% for d in decoupage %}
+            <tr>
+              <td>{{ d.num_decoupage }}</td>
+              <td>{{ d.num_impression }}</td>
+              <td>{{ d.date_decoupage[:10] }}</td>
+              <td>{{ d.hr }}</td>
+              <td>{{ d.num_commande }}</td>
+              <td>{{ d.maquette_id }}</td>
+              <td>{{ d.description }}</td>
+              <td class="text-end">{{ d.feuilles }}</td>
+              <td>{{ d.user }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="9" class="text-center text-secondary py-3">
+                <i class="bi bi-info-circle me-1"></i> Aucun découpage trouvé
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-secondary text-center small">
+      Affichage {{ start_idx }} – {{ end_idx }} sur {{ total }} découpages
+    </p>
+
+    <p class="text-secondary text-end small">
+      <strong>Total feuilles découpées :</strong> {{ total_feuilles }}
+    </p>
+
+    {% set endpoint='decoupe' %}
+    {% set params={
+      'period':period,
+      'start':start,
+      'end':end,
+      'user':user,
+      'article':article
+    } %}
+    {% include 'pagination.html' %}
+
+  </div>
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const period = document.getElementById("period");
+  const dateStart = document.querySelector(".date-start");
+  const dateEnd = document.querySelector(".date-end");
+
+  function toggleDateFields() {
+    const show = period.value === "custom";
+    dateStart.style.display = show ? "block" : "none";
+    dateEnd.style.display = show ? "block" : "none";
+  }
+
+  period.addEventListener("change", function () {
+    toggleDateFields();
+    document.querySelector('input[name="page"]').value = 1;
+    this.form.submit();
+  });
+
+  toggleDateFields();
+
+  document.querySelectorAll('input[type="date"]').forEach((el) => {
+    el.addEventListener("change", function () {
+      document.querySelector('input[name="page"]').value = 1;
+      this.form.submit();
+    });
+  });
+
+  const $user = $("#user_filter").select2({
+    placeholder: "Tous",
+    allowClear: true,
+    width: "100%",
+    minimumResultsForSearch: 0
+  });
+
+  const $article = $("#article_filter").select2({
+    placeholder: "Tous",
+    allowClear: true,
+    width: "100%",
+    minimumResultsForSearch: 0
+  });
+
+  $(document).on("select2:open", function () {
+    const el = document.querySelector(".select2-container--open .select2-search__field");
+    if (el) el.focus();
+  });
+
+  $user.on("change select2:clear", function () {
+    this.form.submit();
+  });
+
+  $article.on("change select2:clear", function () {
+    this.form.submit();
+  });
+
+});
+</script>
+
+{% endblock %}
