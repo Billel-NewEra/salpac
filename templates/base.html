@@ -15,15 +15,10 @@
     <!-- Theme CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/salpac_icon_192.png') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
   </head>
-
-  <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("{{ url_for('static', filename='js/service-worker.js') }}")
-    .then(reg => console.log("Service Worker registered", reg))
-    .catch(err => console.log("SW registration failed", err));
-  }
-  </script>
 
   <body>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -248,5 +243,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
     {% block scripts %}{% endblock %}
+  
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/salpac/service-worker.js")
+        .then(reg => console.log("Service Worker registered, scope:", reg.scope))
+        .catch(err => console.error("SW registration failed:", err));
+    }
+  </script>
   </body>
 </html>
