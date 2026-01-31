@@ -181,7 +181,7 @@ def inject_client_name():
 #   ROUTES PRINCIPALES
 # ============================
 
-@app.route('/service-worker.js')
+@app.route('/salpac/service-worker.js')
 def service_worker():
     return send_from_directory(
         directory=app.root_path,
