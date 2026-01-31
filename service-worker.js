@@ -1,7 +1,6 @@
 const CACHE_NAME = "salpac-cache-v1";
 
 const STATIC_ASSETS = [
-  "/static/manifest.json",
   "/static/css/style.css",
   "/static/icons/salpac_icon_192.png",
   "/static/icons/salpac_icon_512.png"
@@ -10,20 +9,25 @@ const STATIC_ASSETS = [
 // INSTALL
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then(async cache => {
+      await Promise.all(
+        STATIC_ASSETS.map(async asset => {
+          try {
+            const res = await fetch(asset);
+            if (res.ok) await cache.put(asset, res);
+          } catch (_) {}
+        })
+      );
+    })
   );
   self.skipWaiting();
 });
 
-// ACTIVATE (nettoyage anciens caches)
+// ACTIVATE
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -31,15 +35,10 @@ self.addEventListener("activate", event => {
 
 // FETCH
 self.addEventListener("fetch", event => {
-  // On ignore tout sauf GET
+  if (!event.request.url.startsWith(self.location.origin + "/salpac")) return;
   if (event.request.method !== "GET") return;
 
-  // On évite les endpoints dynamiques / auth
-  if (event.request.url.includes("/salpac/api")) return;
-
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      return cached || fetch(event.request);
-    })
+    caches.match(event.request).then(cached => cached || fetch(event.request))
   );
 });
