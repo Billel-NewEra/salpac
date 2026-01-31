@@ -1,9 +1,9 @@
 const CACHE_NAME = "salpac-cache-v1";
 
 const STATIC_ASSETS = [
-  "/static/css/style.css",
-  "/static/icons/salpac_icon_192.png",
-  "/static/icons/salpac_icon_512.png"
+  "/salpac/static/css/style.css",
+  "/salpac/static/icons/salpac_icon_192.png",
+  "/salpac/static/icons/salpac_icon_512.png"
 ];
 
 // INSTALL
