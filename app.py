@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
 import sqlite3
+import os
 from datetime import datetime, timedelta, date
 import calendar
 from flask_login import (
@@ -187,6 +188,14 @@ def service_worker():
         directory=app.root_path,
         path="service-worker.js",
         mimetype="application/javascript"
+    )
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon"
     )
 
 @app.route("/")
