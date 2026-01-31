@@ -118,7 +118,7 @@
     {% endwith %}
     <script>
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("/salpac/service-worker.js")
+        navigator.serviceWorker.register("/salpac/service-worker.js", { scope: "/salpac/" })
           .then(reg => console.log("Service Worker registered (auth), scope:", reg.scope))
           .catch(err => console.error("SW registration failed (auth):", err));
       }
