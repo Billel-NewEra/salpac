@@ -24,12 +24,6 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-# --- Connexion SQL pour authenti
-def get_auth_connection():
-    conn = sqlite3.connect("instance/auth.sqlite")
-    conn.row_factory = sqlite3.Row
-    return conn
-
 # --- User class (Flask-Login) ---
 class User(UserMixin):
     def __init__(self, id, username, password_hash, role, client_id):
@@ -40,7 +34,7 @@ class User(UserMixin):
         self.client_id = client_id
 
 def get_user_by_id(user_id):
-    conn = get_auth_connection()
+    conn = get_db_connection()
     row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     conn.close()
     if row:
@@ -48,7 +42,7 @@ def get_user_by_id(user_id):
     return None
 
 def get_user_by_username(username):
-    conn = get_auth_connection()
+    conn = get_db_connection()
     row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
     conn.close()
     if row:
@@ -825,37 +819,32 @@ def create_user():
         flash("Accès refusé : réservé aux administrateurs ❌", "danger")
         return redirect(url_for("index"))
 
-    # --- Liste des clients depuis local.sqlite ---
-    conn_local = get_db_connection()
-    clients = conn_local.execute("SELECT N AS id, Entreprise AS company_name FROM client").fetchall()
-    conn_local.close()
+    conn = get_db_connection()
+    clients = conn.execute("SELECT N AS id, Entreprise AS company_name FROM client").fetchall()
 
     if request.method == "POST":
         username = request.form["username"].strip()
         password = request.form["password"].strip()
-        client_id = int(request.form["client_id"])
+        client_id = request.form["client_id"]
 
-        conn_auth = get_auth_connection()
-
-        exists = conn_auth.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
-        
+        exists = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
         if exists:
             flash("❌ Ce nom d'utilisateur existe déjà", "danger")
-            conn_auth.close()
+            conn.close()
             return redirect(url_for("create_user"))
 
         password_hash = generate_password_hash(password)
-        conn_auth.execute(
+        conn.execute(
             "INSERT INTO users (username, password_hash, role, client_id) VALUES (?, ?, ?, ?)",
             (username, password_hash, "client", client_id)
         )
-        conn_auth.commit()
-        conn_auth.close()
+        conn.commit()
+        conn.close()
 
         flash(f"✅ Compte '{username}' créé avec succès", "success")
-        # Redirection vers la page des utilisateurs, pas celle des clients
-        return redirect(url_for("list_users"))
+        return redirect(url_for("clients"))
 
+    conn.close()
     return render_template("create_user.html", clients=clients)
 
 # ---- Liste et suppression des utilisateurs ----
@@ -866,31 +855,14 @@ def list_users():
         flash("Accès refusé ❌", "danger")
         return redirect(url_for("index"))
 
-    # 1️⃣ Connexion à auth.sqlite → pour les utilisateurs
-    conn_auth = get_auth_connection()
-    users = conn_auth.execute("SELECT id, username, role, client_id, is_active, created_at FROM users").fetchall()
-    conn_auth.close()
-
-    # 2️⃣ Connexion à local.sqlite → pour les clients
-    conn_local = get_db_connection()
-    clients = conn_local.execute(
-        "SELECT N, Entreprise FROM client"
-    ).fetchall()
-    conn_local.close()
-
-    # 3️⃣ Créer un mapping {id_client: nom_entreprise}
-    clients_map = {c["N"]: c["Entreprise"] for c in clients}
-
-    enriched_users = []
-    for u in users:
-        enriched_users.append({
-            "id": u["id"],
-            "username": u["username"],
-            "role": u["role"],
-            "client_name": clients_map.get(u["client_id"], "(aucun)"),
-            "is_active": u["is_active"],
-            "created_at": u["created_at"]
-        })
+    conn = get_db_connection()
+    users = conn.execute("""
+        SELECT u.id, u.username, u.role, u.client_id, c.Entreprise AS client_name
+        FROM users u
+        LEFT JOIN client c ON u.client_id = c.N
+        ORDER BY u.id ASC
+    """).fetchall()
+    conn.close()
 
     return render_template("list_users.html", users=users)
 
