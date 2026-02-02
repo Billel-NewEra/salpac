@@ -54,11 +54,7 @@
 
             <!-- Date -->
             <td>
-              {% if d.date_livraison %}
-                {{ d.date_livraison.strftime('%d/%m/%Y')
-                   if d.date_livraison.__class__.__name__ != 'str'
-                   else d.date_livraison }}
-              {% endif %}
+              {{ d.date_livraison | datetime_format }}
             </td>
 
             <!-- Observation -->

@@ -68,7 +68,6 @@
             <th class="d-none d-md-table-cell">N° Pliage</th>
             <th class="d-none d-md-table-cell">N° Découpage</th>
             <th>Date</th>
-            <th>HR</th>
             <th class="d-none d-md-table-cell">N° Commande</th>
             <th class="d-none d-md-table-cell">Maquette</th>
             <th>Article</th>
@@ -92,12 +91,7 @@
           
             <!-- Date -->
             <td>
-              {{ p.date_pliage[:10] }}
-            </td>
-          
-            <!-- HR -->
-            <td>
-              {{ p.hr }}
+              {{ p.datetime_full | datetime_format }}
             </td>
           
             <!-- N° Commande -->

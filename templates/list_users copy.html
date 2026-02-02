@@ -3,32 +3,11 @@
 {% block content %}
 
 <style>
-
-@media (max-width: 768px) {
-    /* Par défaut : pas de wrap */
-.table td {
-  white-space: nowrap;
-}
-
-/* Username */
-.table td:nth-child(2) {
-  white-space: normal;
+  .table td:nth-child(2) {
+  white-space: normal !important;
   word-break: break-word;
-  min-width: 126px;
+  max-width: 160px;
 }
-
-/* Client */
-.table td:nth-child(4) {
-  white-space: normal;
-  word-break: break-word;
-  min-width: 90px;
-  
-}
-
-
-}
-
-
 </style>
 
 <h4 class="mb-3"><i class="bi bi-person-lines-fill me-1 text-admin-connexion"></i> Gestion des comptes clients</h4>
@@ -41,7 +20,7 @@
           <tr>
             <th class="d-none d-md-table-cell">ID</th>
             <th>User</th>
-            <th class="d-none d-md-table-cell">Rôle</th>
+            <th>Rôle</th>
             <th>Client</th>
             <th class="text-center">Actions</th>
           </tr>
@@ -51,14 +30,14 @@
           <tr>
             <td class="d-none d-md-table-cell">{{ u.id }}</td>
             <td>{{ u.username }}</td>
-            <td class="d-none d-md-table-cell">
+            <td>
               {% if u.role == "admin" %}
-                <span class="badge bg-danger-subtle text-danger border-danger-subtle">
-                  <i class="bi bi-person-gear me-1"></i>Admin
+                <span class="badge bg-danger-subtle text-danger border-danger-subtle" title="Admin">
+                  <i class="bi bi-person-gear me-1"></i>
                 </span>
               {% else %}
-                <span class="badge bg-info-subtle text-info border-info-subtle">
-                  <i class="bi bi-person me-1"></i>Client
+                <span class="badge bg-info-subtle text-info border-info-subtle" title="Client">
+                  <i class="bi bi-person me-1"></i>
                 </span>
               {% endif %}
             </td>

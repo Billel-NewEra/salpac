@@ -25,7 +25,7 @@
 
     <style>
       html {
-        overflow-y: scroll; /* ✅ Barre fantôme toujours présente → pas de saut */
+        overflow: hidden;
       }
 
       body {
@@ -61,22 +61,25 @@
         box-shadow: 0 0 8px rgba(220, 53, 69, 0.5);
         transition: all 0.3s ease;
       }
-       .auth-login-page {
-    height: 100vh;           /* hauteur stable */
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: var(--bg-body);
-    overflow: hidden;        /* empêche les mouvements */
-  }
-  html {
-    overflow-y: scroll; /* ✅ barre fantôme → pas de saut */
-  }
+    .auth-login-page{
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding-top:16vh;
+  overflow:hidden;
+  position:fixed;
+  width:100%;
+  touch-action:none;
+}
+  
+    html, body{
+    overscroll-behavior:none;
+    }
     </style>
   </head>
 
-  <body class="auth-login-page d-flex justify-content-center align-items-center overflow-hidden">
+  <body class="auth-login-page d-flex justify-content-center overflow-hidden">
     {% block content %}{% endblock %}
 
     <!-- JS Bootstrap -->

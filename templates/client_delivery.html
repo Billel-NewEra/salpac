@@ -15,8 +15,8 @@
 
             <th>Produit</th>
 
-            <th class="text-end">Quantité</th>
-            <th class="text-end">Montant</th>
+            <th>Quantité</th>
+            <th>Montant</th>
             <th>Date</th>
 
             <!-- Facture + Observation : desktop uniquement -->
@@ -38,22 +38,18 @@
             </td>
 
             <!-- Quantité -->
-            <td class="text-end">
+            <td>
               {{ d.qte }}
             </td>
 
             <!-- Montant -->
-            <td class="text-end">
+            <td>
               {{ d.montant }}
             </td>
 
             <!-- Date -->
             <td>
-              {% if d.date_livraison %}
-                {{ d.date_livraison.strftime('%d/%m/%Y')
-                   if d.date_livraison.__class__.__name__ != 'str'
-                   else d.date_livraison }}
-              {% endif %}
+              {{ d.date_livraison | datetime_format }}
             </td>
 
             <!-- Facture -->

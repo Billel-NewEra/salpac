@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Commandes{% endblock %}
+{% block content %}
+
+<h4 class="mb-3">Liste des Commandes</h4>
+
+<!-- 🔎 Filtres -->
+<form method="get" action="{{ url_for('orders') }}" class="mb-2">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-2">
+      <label for="period" class="form-label small">📅 Période</label>
+      <select id="period" name="period" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="all" {% if period == 'all' %}selected{% endif %}>Toutes</option>
+        <option value="today" {% if period == 'today' %}selected{% endif %}>Aujourd'hui</option>
+        <option value="yesterday" {% if period == 'yesterday' %}selected{% endif %}>Hier</option>
+        <option value="week" {% if period == 'week' %}selected{% endif %}>Semaine</option>
+        <option value="month" {% if period == 'month' %}selected{% endif %}>Mois</option>
+        <option value="year" {% if period == 'year' %}selected{% endif %}>Année</option>
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label for="status" class="form-label small">📌 Statut</label>
+      <select id="status" name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="all" {% if status == 'all' %}selected{% endif %}>Tous</option>
+        <option value="EN COURS" {% if status == 'EN COURS' %}selected{% endif %}>En cours</option>
+        <option value="LIVRAISON" {% if status == 'LIVRAISON' %}selected{% endif %}>Livraison</option>
+        <option value="LIVREE" {% if status == 'LIVREE' %}selected{% endif %}>Livrée</option>
+      </select>
+    </div>
+
+    {% if current_user.role == 'admin' %}
+    <div class="col-md-3">
+      <label for="client" class="form-label small">🏢 Client</label>
+      <input type="text" name="client" value="{{ client }}" id="client"
+             class="form-control form-control-sm"
+             placeholder="Client"
+             onkeydown="if(event.key==='Enter'){this.form.submit();}">
+    </div>
+    {% endif %}
+
+    <div class="col-md-3">
+      <label for="product" class="form-label small">📦 Produit</label>
+      <input type="text" name="product" value="{{ product }}" id="product"
+             class="form-control form-control-sm"
+             placeholder="Produit"
+             onkeydown="if(event.key==='Enter'){this.form.submit();}">
+    </div>
+
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-sm btn-primary w-100">Filtrer</button>
+    </div>
+  </div>
+</form>
+
+<!-- 📋 Tableau des commandes -->
+<div class="card widget" id="ordersCard">
+  <div class="card-body p-2">
+    <div class="table-responsive">
+      <table class="table table-dark table-compact table-striped table-borderless align-middle">
+        <thead>
+          <tr>
+            <th class="d-none d-md-table-cell">#</th>
+            <th>CmdCL</th>
+            {% if current_user.role == 'admin' %}
+              <th class="d-none d-md-table-cell">Client</th>
+            {% endif %}
+            <th>Produit</th>
+            <th class="d-none d-sm-table-cell">Qté</th>
+            <th class="d-none d-md-table-cell">Date</th>
+            <th>Statut</th>
+            <th class="d-none d-lg-table-cell">Livré</th>
+            <th class="d-none d-lg-table-cell">Reste</th>
+              <th class="text-center" style="width:1%;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in orders %}
+          <tr>
+            <td class="d-none d-md-table-cell">{{ o.num_reservation }}</td>
+            <td>{{ o.cmdl }}</td>
+
+            {% if current_user.role == 'admin' %}
+              <td class="d-none d-md-table-cell text-truncate" style="max-width:160px;">
+                {{ o.client }}
+              </td>
+            {% endif %}
+
+            <td>{{ o.produit }}</td>
+            <td class="d-none d-sm-table-cell">{{ o.qte }}</td>
+
+            <td class="d-none d-md-table-cell">
+              {% if o.date_reservation %}
+                {{ o.date_reservation.strftime('%d/%m/%Y') if o.date_reservation.__class__.__name__ != 'str' else o.date_reservation }}
+              {% endif %}
+            </td>
+
+            <td>
+              {% if o.situation == 'LIVREE' %}
+                <span class="badge bg-success-subtle text-success border-success-subtle">Livrée</span>
+              {% elif o.situation == 'LIVRAISON' %}
+                <span class="badge bg-info-subtle text-info border-info-subtle">Livraison</span>
+              {% elif o.situation == 'EN COURS' %}
+                <span class="badge bg-warning-subtle text-warning border-warning-subtle">En cours</span>
+              {% endif %}
+            </td>
+
+            <td class="d-none d-lg-table-cell">{{ o.total_livre }}</td>
+            <td class="d-none d-lg-table-cell">{{ o.reste }}</td>
+
+            <td class="text-center">
+              <div class="actions-cell">
+                <a href="{{ url_for('order_delivery', order_id=o.num_reservation) }}"
+                   class="btn btn-sm btn-subtle"
+                   title="Voir livraisons">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-secondary mt-2 text-center small">
+      Affichage {{ start }} – {{ end }} sur {{ total_orders }} commandes
+    </p>
+
+    {% set endpoint = 'orders' %}
+    {% set params = {'period': period, 'status': status, 'client': client, 'product': product} %}
+    {% include 'pagination.html' %}
+  </div>
+</div>
+
+{% endblock %}

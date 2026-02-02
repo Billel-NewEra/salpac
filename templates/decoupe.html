@@ -70,7 +70,6 @@
             <th class="d-none d-md-table-cell">N° Découpage</th>
             <th class="d-none d-md-table-cell">N° Tirage</th>
             <th>Date</th>
-            <th>HR</th>
             <th class="d-none d-md-table-cell">N° Commande</th>
             <th class="d-none d-md-table-cell">Maquette</th>
             <th>Article</th>
@@ -94,12 +93,7 @@
           
             <!-- Date -->
             <td>
-              {{ d.date_decoupage[:10] }}
-            </td>
-          
-            <!-- HR -->
-            <td>
-              {{ d.hr }}
+              {{ d.datetime_full | datetime_format }}
             </td>
           
             <!-- N° Commande -->

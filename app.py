@@ -124,6 +124,29 @@ def get_weekly_activity():
 def load_user(user_id):
     return get_user_by_id(user_id)
 
+@app.template_filter("datetime_format")
+def datetime_format(value):
+    if not value:
+        return ""
+
+    # 1️⃣ Objet datetime
+    if isinstance(value, datetime):
+        return value.strftime("%d-%m-%Y %H:%M")
+
+    # 2️⃣ String ISO (SQLite classique)
+    if isinstance(value, str):
+        try:
+            # gère :
+            # 2025-01-24 16:32:10
+            # 2025-01-24T16:32:10
+            # 2025-01-24 16:32:10.123456
+            dt = datetime.fromisoformat(value.replace(" ", "T"))
+            return dt.strftime("%d-%m-%Y %H:%M")
+        except:
+            return value
+
+    return value
+
 # ============================
 #   ROUTES AUTHENTIFICATION
 # ============================
@@ -131,7 +154,7 @@ def load_user(user_id):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form["username"]
+        username = request.form["username"].strip().lower()
         password = request.form["password"]
         user = get_user_by_username(username)
 
@@ -461,6 +484,8 @@ def orders():
     params, count_params = [], []
 
     today = datetime.today().date()
+    start_date = request.args.get("start") or ""
+    end_date = request.args.get("end") or ""
 
     # Restriction si client connecté
     if current_user.role == "client":
@@ -502,6 +527,11 @@ def orders():
         count_query += " AND date(date_reservation) >= ?"
         params.append(start)
         count_params.append(start)
+    elif period == "custom" and start_date and end_date:
+        query += " AND date(date_reservation) BETWEEN ? AND ?"
+        count_query += " AND date(date_reservation) BETWEEN ? AND ?"
+        params.extend([start_date, end_date])
+        count_params.extend([start_date, end_date])
 
     if status != "all":
         query += " AND situation = ?"
@@ -528,12 +558,24 @@ def orders():
     query += " ORDER BY date_reservation DESC LIMIT ? OFFSET ?"
     params.extend([per_page, (page - 1) * per_page])
 
+    # --- Listes pour Select2 ---
+    clients_list = conn.execute(
+        "SELECT DISTINCT client FROM orders ORDER BY client"
+    ).fetchall()
+
+    products_list = conn.execute(
+        "SELECT DISTINCT produit FROM orders ORDER BY produit"
+    ).fetchall()
+
+    clients = [c["client"] for c in clients_list if c["client"]]
+    products = [p["produit"] for p in products_list if p["produit"]]
+
     orders_list = conn.execute(query, params).fetchall()
     total_orders = conn.execute(count_query, count_params).fetchone()[0]
     total_pages = (total_orders + per_page - 1) // per_page
 
-    start = (page - 1) * per_page + 1 if total_orders > 0 else 0
-    end = min(page * per_page, total_orders)
+    start_idx = (page - 1) * per_page + 1 if total_orders > 0 else 0
+    end_idx = min(page * per_page, total_orders)
 
     conn.close()
     return render_template(
@@ -541,13 +583,17 @@ def orders():
         orders=orders_list,
         page=page,
         total_pages=total_pages,
-        start=start,
-        end=end,
+        start=start_date,
+        end=end_date,
         total_orders=total_orders,
+        start_idx=start_idx,
+        end_idx=end_idx,
         period=period,
         status=status,
         client=client,
-        product=product
+        product=product,
+        clients = clients,
+        products=products
     )
 
 # ---- Orders by client ----
@@ -618,6 +664,9 @@ def delivery():
     client = request.args.get("client", "").strip()
     product = request.args.get("product", "").strip()
 
+    start_date = request.args.get("start") or ""
+    end_date = request.args.get("end") or ""
+
     query = """
         SELECT 
             nl, code_client, client, qte, montant, num_reservation,
@@ -626,40 +675,47 @@ def delivery():
         FROM delivery
         WHERE 1=1
     """
+
     count_query = "SELECT COUNT(*) FROM delivery WHERE 1=1"
     params, count_params = [], []
 
     today = datetime.today().date()
 
+    # --- Restriction client ---
     if current_user.role == "client":
         query += " AND code_client = ?"
         count_query += " AND code_client = ?"
         params.append(current_user.client_id)
         count_params.append(current_user.client_id)
 
+    # --- Filtres période ---
     if period == "today":
         query += " AND date(date_livraison) = ?"
         count_query += " AND date(date_livraison) = ?"
         params.append(today)
         count_params.append(today)
+
     elif period == "yesterday":
         y = today - timedelta(days=1)
         query += " AND date(date_livraison) = ?"
         count_query += " AND date(date_livraison) = ?"
         params.append(y)
         count_params.append(y)
+
     elif period == "week":
         start = today - timedelta(days=today.weekday())
         query += " AND date(date_livraison) >= ?"
         count_query += " AND date(date_livraison) >= ?"
         params.append(start)
         count_params.append(start)
+
     elif period == "month":
         start = today.replace(day=1)
         query += " AND date(date_livraison) >= ?"
         count_query += " AND date(date_livraison) >= ?"
         params.append(start)
         count_params.append(start)
+
     elif period == "year":
         start = today.replace(month=1, day=1)
         query += " AND date(date_livraison) >= ?"
@@ -667,17 +723,23 @@ def delivery():
         params.append(start)
         count_params.append(start)
 
+    elif period == "custom" and start_date and end_date:
+        query += " AND date(date_livraison) BETWEEN ? AND ?"
+        count_query += " AND date(date_livraison) BETWEEN ? AND ?"
+        params.extend([start_date, end_date])
+        count_params.extend([start_date, end_date])
+
+    # --- Client filter ---
     if client and current_user.role == "admin":
-        tokens = [t for t in client.split() if t]
-        pattern = "%" + "%".join(tokens) + "%"
+        pattern = "%" + "%".join(client.split()) + "%"
         query += " AND client LIKE ? COLLATE NOCASE"
         count_query += " AND client LIKE ? COLLATE NOCASE"
         params.append(pattern)
         count_params.append(pattern)
 
+    # --- Produit filter ---
     if product:
-        tokens = [t for t in product.split() if t]
-        pattern = "%" + "%".join(tokens) + "%"
+        pattern = "%" + "%".join(product.split()) + "%"
         query += " AND produit LIKE ? COLLATE NOCASE"
         count_query += " AND produit LIKE ? COLLATE NOCASE"
         params.append(pattern)
@@ -686,12 +748,20 @@ def delivery():
     query += " ORDER BY date_livraison DESC LIMIT ? OFFSET ?"
     params.extend([per_page, (page - 1) * per_page])
 
+    # --- Listes Select2 ---
+    clients = [c["client"] for c in conn.execute(
+        "SELECT DISTINCT client FROM delivery ORDER BY client"
+    ).fetchall() if c["client"]]
+
+    products = [p["produit"] for p in conn.execute(
+        "SELECT DISTINCT produit FROM delivery ORDER BY produit"
+    ).fetchall() if p["produit"]]
+
     delivery_list = conn.execute(query, params).fetchall()
     total_delivery = conn.execute(count_query, count_params).fetchone()[0]
-    total_pages = (total_delivery + per_page - 1) // per_page
 
-    start = (page - 1) * per_page + 1 if total_delivery > 0 else 0
-    end = min(page * per_page, total_delivery)
+    start_idx = (page - 1) * per_page + 1 if total_delivery else 0
+    end_idx = min(page * per_page, total_delivery)
 
     conn.close()
 
@@ -699,13 +769,17 @@ def delivery():
         "delivery.html",
         delivery=delivery_list,
         page=page,
-        total_pages=total_pages,
-        start=start,
-        end=end,
+        total_pages=(total_delivery + per_page - 1)//per_page,
+        start=start_date,
+        end=end_date,
+        start_idx=start_idx,
+        end_idx=end_idx,
         total_delivery=total_delivery,
         period=period,
         client=client,
-        product=product
+        product=product,
+        clients=clients,
+        products=products
     )
 
 # ---- Delivery by client ----
@@ -901,7 +975,7 @@ def list_users():
             "created_at": u["created_at"]
         })
 
-    return render_template("list_users.html", users=users)
+    return render_template("list_users.html", users=enriched_users)
 
 @app.route("/admin/users/delete/<int:user_id>", methods=["POST"])
 @login_required
@@ -910,10 +984,10 @@ def delete_user(user_id):
         flash("Accès refusé ❌", "danger")
         return redirect(url_for("index"))
 
-    conn = get_db_connection()
-    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
-    conn.commit()
-    conn.close()
+    conn_auth = get_auth_connection()
+    conn_auth.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn_auth.commit()
+    conn_auth.close()
 
     flash("✅ Utilisateur supprimé avec succès", "success")
     return redirect(url_for("list_users"))
@@ -969,7 +1043,7 @@ def impression():
     start_date, end_date = period_bounds(period, start, end)
 
     # ---- requête ----
-    query = "SELECT num_impression, date_impression, hr, num_commande, machine, article, feuilles, etuis, user FROM impressions WHERE 1=1"
+    query = "SELECT num_impression, date_impression, hr, num_commande, machine, article, feuilles, etuis, user, datetime(date(date_impression) || ' ' || IFNULL(hr,'00:00')) AS datetime_full FROM impressions WHERE 1=1"
     count_query = "SELECT COUNT(*) FROM impressions WHERE 1=1"
     params = []
     count_params = []
@@ -1089,7 +1163,8 @@ def decoupe():
     # ---- construction requêtes ----
     query = """
         SELECT num_decoupage, num_impression, date_decoupage, hr,
-               num_commande, maquette_id, description, feuilles, user
+               num_commande, maquette_id, description, feuilles, user,
+               datetime(date(date_decoupage) || ' ' || IFNULL(hr,'00:00')) AS datetime_full
         FROM decoupage WHERE 1=1
     """
     count_query = "SELECT COUNT(*) FROM decoupage WHERE 1=1"
@@ -1205,7 +1280,7 @@ def pliage():
     start_date, end_date = period_bounds(period, start, end)
 
     # Base query
-    query = "SELECT * FROM pliage WHERE 1=1"
+    query = "SELECT *, datetime(date(date_pliage) || ' ' || IFNULL(hr,'00:00')) AS datetime_full FROM pliage WHERE 1=1"
     params = []
 
     # Date filter
@@ -1267,4 +1342,5 @@ def pliage():
     )
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8888)
+    #app.run(debug=True, port=8888)
+    app.run(host="0.0.0.0", port=8888, debug=True)
