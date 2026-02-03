@@ -223,7 +223,10 @@ def favicon():
 
 @app.route("/")
 def home():
-    return render_template("home.html", current_year=datetime.now().year)
+    #return render_template("home.html", current_year=datetime.now().year)
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    return redirect(url_for("login"))
 
 # ---- Dashboard ----
 @app.route("/index")
