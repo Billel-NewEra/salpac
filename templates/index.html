@@ -151,27 +151,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  const ctx = document.getElementById('ordersChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Livrées', 'En cours', 'Annulées'],
-      datasets: [{
-        data: [{{ orders_livree }}, {{ orders_encours }}, {{ orders_annulees or 0 }}],
-        backgroundColor: ['#22c55e', '#E9B949', '#EF4444']
-      }]
-    },
-    options: {
-      plugins: {
-        legend: {
-          labels: { color: '#E2E8F0' }
-        }
-      }
-    }
-  });
-</script>
+
 <!-- ✅ ApexCharts -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
