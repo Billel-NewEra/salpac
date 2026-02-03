@@ -951,7 +951,7 @@ def list_users():
         return redirect(url_for("index"))
 
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = 9
     offset = (page - 1) * per_page
 
     # 🔹 Auth DB
