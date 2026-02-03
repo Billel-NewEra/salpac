@@ -85,6 +85,13 @@
         </tbody>
       </table>
     </div>
+    <p class="text-secondary mt-2 text-center small">
+  Affichage {{ start }} – {{ end }} sur {{ total_users }} utilisateurs
+</p>
+
+{% set endpoint = 'list_users' %}
+{% set params = {} %}
+{% include 'pagination.html' %}
   </div>
 </div>
 

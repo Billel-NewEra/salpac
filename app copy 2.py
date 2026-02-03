@@ -945,38 +945,23 @@ def create_user():
 @app.route("/admin/users")
 @login_required
 def list_users():
-
     if current_user.role != "admin":
         flash("Accès refusé ❌", "danger")
         return redirect(url_for("index"))
 
-    page = request.args.get("page", 1, type=int)
-    per_page = 10
-    offset = (page - 1) * per_page
-
-    # 🔹 Auth DB
+    # 1️⃣ Connexion à auth.sqlite → pour les utilisateurs
     conn_auth = get_auth_connection()
-
-    total_users = conn_auth.execute(
-        "SELECT COUNT(*) as count FROM users"
-    ).fetchone()["count"]
-
-    users = conn_auth.execute("""
-        SELECT id, username, role, client_id, is_active, created_at
-        FROM users
-        ORDER BY id DESC
-        LIMIT ? OFFSET ?
-    """, (per_page, offset)).fetchall()
-
+    users = conn_auth.execute("SELECT id, username, role, client_id, is_active, created_at FROM users").fetchall()
     conn_auth.close()
 
-    # 🔹 Clients DB
+    # 2️⃣ Connexion à local.sqlite → pour les clients
     conn_local = get_db_connection()
     clients = conn_local.execute(
         "SELECT N, Entreprise FROM client"
     ).fetchall()
     conn_local.close()
 
+    # 3️⃣ Créer un mapping {id_client: nom_entreprise}
     clients_map = {c["N"]: c["Entreprise"] for c in clients}
 
     enriched_users = []
@@ -990,20 +975,7 @@ def list_users():
             "created_at": u["created_at"]
         })
 
-    total_pages = (total_users + per_page - 1) // per_page
-
-    start = offset + 1 if total_users > 0 else 0
-    end = min(offset + per_page, total_users)
-
-    return render_template(
-        "list_users.html",
-        users=enriched_users,
-        page=page,
-        total_pages=total_pages,
-        total_users=total_users,
-        start=start,
-        end=end
-    )
+    return render_template("list_users.html", users=enriched_users)
 
 @app.route("/admin/users/delete/<int:user_id>", methods=["POST"])
 @login_required
