@@ -12,6 +12,13 @@ from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 app.secret_key = "change_this_to_a_real_secret_key"
+app.config["REMEMBER_COOKIE_DURATION"] = timedelta(days=30)
+
+app.config.update(
+    REMEMBER_COOKIE_SECURE=True,
+    REMEMBER_COOKIE_HTTPONLY=True,
+    REMEMBER_COOKIE_SAMESITE="Lax"
+)
 
 # --- Flask-Login config ---
 login_manager = LoginManager()
@@ -153,14 +160,16 @@ def datetime_format(value):
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    # Si déjà connecté → dashboard direct
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
     if request.method == "POST":
         username = request.form["username"].strip().lower()
         password = request.form["password"]
         user = get_user_by_username(username)
 
         if user and check_password_hash(user.password_hash, password):
-            login_user(user)
-            session["welcome"] = True
+            login_user(user, remember=True)
             return jsonify({"success": True, "redirect": url_for("index")})
         else:
             # ✅ On renvoie du JSON au lieu de recharger la page

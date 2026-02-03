@@ -1560,7 +1560,9 @@ html, body {
 }
 
 /* 2️⃣ Le body devient un conteneur flex */
-
+body {
+  display: flex;
+}
 
 /* 3️⃣ Sidebar reste fixe, main prend le reste */
 .main {
@@ -1653,25 +1655,4 @@ footer {
 @keyframes glowLine{
   0%{background-position:-200px 0;}
   100%{background-position:200px 0;}
-}
-
-/* DESKTOP */
-.main {
-  margin-left: 260px;
-  width: calc(100% - 260px);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* MOBILE */
-@media (max-width: 768px) {
-  .main {
-    margin-left: 0;
-    width: 100%;
-  }
-}
-
-html {
-  scrollbar-gutter: stable;
 }

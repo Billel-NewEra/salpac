@@ -21,155 +21,6 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-
-    <style>
-     /* Branding SALPAC visible uniquement sur mobile */
-@media (min-width: 992px) {
-  .salpac-brand-mobile {
-    display: none !important;
-  }
-}
-
-.hamburger-inbar {
-  font-size: 1.6rem;
-  color: white;
-}
-
-/* Bloc texte SALPAC (mobile) */
-.salpac-mobile-text{
-  display:flex;
-  flex-direction:column;
-  line-height:1.05;
-}
-
-.salpac-mobile-title{
-  font-weight:800;
-  color:#fff;
-  font-size:0.95rem;
-  letter-spacing:0.5px;
-
-  text-align:left;   /* ← FIX */
-}
-
-.salpac-mobile-client{
-  margin-top:2px;
-
-  font-size:0.75rem;
-  font-weight:500;
-
-  color:#49BEFF;   /* ton cyan Spike */
-
-  
-  overflow:hidden;
-  text-overflow:ellipsis;
-
-  max-width:150px;
-}
-
-.topbar{
-  position:relative;
-}
-
-/* Burger parfaitement centré */
-@media (max-width:768px){
-  .hamburger-inbar{
-    position:absolute;
-    left:55%;
-    transform:translateX(-50%);
-  }
-}
-
-.user-role {
-  text-transform: capitalize;
-  font-size: 0.8rem;
-  opacity: 0.85;
-}
-
-@media (max-width: 768px){
-
-  #userToggle{
-    flex-direction: column !important;
-    align-items: center !important;
-  }
-
-  #userToggle .d-md-block{
-    display:block !important;
-    margin-left:0 !important;
-    text-align:center;
-    font-size:0.75rem;
-  }
-
-  #userToggle .user-role{
-    display:none !important;
-  }
-
-}
-
-@media (max-width:768px){
-
-  #userToggle .fw-semibold{
-    color:#9CA3AF !important;
-    opacity:0.85;
-  }
-
-}
-
-/* Sidebar en colonne */
-.sidebar {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Icône logout seule */
-.logout-icon {
-  font-size: 1.6rem;
-  color: #64748b; /* gris discret */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  transition: all 0.25s ease;
-}
-
-/* Hover moderne */
-.logout-icon:hover {
-  color: #ef4444;
-  transform: scale(1.15);
-  text-shadow: 0 0 12px rgba(239,68,68,0.6);
-}
-
-.sidebar-logout{
-  margin-top:25px;
-  padding-top:15px;
-  border-top:1px solid rgba(255,255,255,0.06);
-  opacity:0.9;
-}
-
-/* Icône logout moderne */
-.logout-icon{
-  font-size:1.6rem;
-  color:#64748b;
-  transition:all .25s ease;
-}
-
-.logout-icon:hover{
-  color:#ef4444;
-  transform:scale(1.2);
-  text-shadow:0 0 12px rgba(239,68,68,.6);
-}
-
-.welcome-text{
-  color:#94a3b8;
-  font-weight:500;
-}
-
-.welcome-client{
-  color:#49BEFF;
-  font-weight:600;
-  text-shadow:0 0 8px rgba(73,190,255,.4);
-  text-transform: capitalize;
-}
-    </style>
   </head>
 
   <body>
@@ -265,93 +116,44 @@
           
         </div>
       {% endif %}
-      {% if current_user.is_authenticated %}
-  <div class="sidebar-logout text-center py-3">
-  <a href="{{ url_for('logout') }}" class="logout-icon" title="Déconnexion">
-    <i class="bi bi-power"></i>
-  </a>
-</div>
-{% endif %}
     </aside>
 
     <!-- MAIN -->
     <div class="main">
       <div class="topbar-wrapper">
-        <header class="topbar d-flex align-items-center px-3">
+        <header class="topbar d-flex align-items-center px-4">
+          <!-- 🍔 Hamburger mobile -->
+          <button class="hamburger-inbar" id="hamburgerBtn" aria-label="Menu">
+            <i class="bi bi-list"></i>
+          </button>
+          <div class="ms-auto d-flex align-items-center gap-3">
+            <i class="bi bi-grid fs-5"></i>
+            <i class="bi bi-moon-stars fs-5 theme-toggle" style="cursor:pointer;"></i>
 
-  <!-- ZONE GAUCHE -->
-  <div class="d-flex align-items-center flex-fill">
-
-    <div class="salpac-brand-mobile d-flex align-items-center gap-2">
-
-  <!-- Logo à gauche -->
-  <img src="{{ url_for('static', filename='img/salpac-logo.png') }}"
-       style="height:32px;"
-       class="me-1">
-
-  <!-- Texte (2 lignes) -->
-  <div class="salpac-mobile-text">
-    <div class="salpac-mobile-title">SALPAC</div>
-
-    {% if current_user.is_authenticated and current_user.role == 'client' %}
-      <div class="salpac-mobile-client">
-        {{ client_name }}
-      </div>
-    {% endif %}
-  </div>
-
-</div>
-
-  </div>
-
-  <!-- ZONE CENTRE -->
-<div class="flex-fill text-center d-none d-lg-block">
-    <div class="welcome-text">
-      Bienvenue, <span class="welcome-client">{{ current_user.username }}</span>
-    </div>
-
-
-</div>
-  <!-- ZONE CENTRE -->
-  
-
-    <button class="hamburger-inbar d-lg-none" id="hamburgerBtn">
-      <i class="bi bi-list"></i>
-    </button>
-
-
-
-  <!-- ZONE DROITE -->
-  <div class="d-flex justify-content-end flex-fill">
-
-    {% if current_user.is_authenticated %}
-    <div class="user-menu position-relative">
-      <button type="button"
-              id="userToggle"
-              class="user-dropdown bg-transparent border-0 d-flex align-items-center">
-
-        <img src="{{ url_for('static', filename='img/avatar-default.svg') }}"
-             class="rounded-circle"
-             width="38"
-             height="38">
-
-        <div class="d-none d-md-block text-start ms-2">
-          <div class="text-white fw-semibold">
-            {{ current_user.username }}
+            {% if current_user.is_authenticated %}
+            <div class="user-menu position-relative">
+              <button type="button"
+                      id="userToggle"
+                      class="user-dropdown d-flex align-items-center text-decoration-none bg-transparent border-0">
+                <img src="{{ url_for('static', filename='img/avatar-default.svg') }}"
+                     class="rounded-circle me-3" width="42" height="42" alt="User">
+                <div class="d-none d-md-block text-start me-2">
+                  <div class="text-white fw-semibold">{{ current_user.username }}</div>
+                  <div class="user-role">{{ current_user.role }}</div>
+                </div>
+              </button>
+            
+              <div id="userMenu"
+                   class="dropdown-menu dropdown-menu-end shadow">
+                <a class="dropdown-item logout-item-danger"
+                   href="{{ url_for('logout') }}">
+                  <i class="bi bi-box-arrow-right me-2"></i> Déconnexion
+                </a>
+              </div>
+            </div>
+            {% endif %}
           </div>
-        
-          <div class="user-role">
-            {{ current_user.role }}
-          </div>
-        </div>
-
-      </button>
-    </div>
-    {% endif %}
-
-  </div>
-
-</header>
+        </header>
       </div>
 
       <main class="container-fluid py-4">
@@ -381,6 +183,11 @@
     </div>
 
     
+    <script>
+      document.querySelector('.theme-toggle')?.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+      });
+    </script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         const wrapper = document.querySelector('.topbar-wrapper');
