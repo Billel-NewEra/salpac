@@ -964,7 +964,7 @@ def list_users():
     users = conn_auth.execute("""
         SELECT id, username, role, client_id, is_active, created_at
         FROM users
-        ORDER BY id DESC
+        ORDER BY id ASC
         LIMIT ? OFFSET ?
     """, (per_page, offset)).fetchall()
 
