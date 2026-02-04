@@ -261,6 +261,7 @@ def index():
         orders_livree = conn.execute("SELECT COUNT(*) FROM orders WHERE situation = 'LIVREE'").fetchone()[0]
         orders_encours = conn.execute("SELECT COUNT(*) FROM orders WHERE situation = 'EN COURS'").fetchone()[0]
         orders_livraison = conn.execute("SELECT COUNT(*) FROM orders WHERE situation = 'LIVRAISON'").fetchone()[0]
+        orders_bag = conn.execute("SELECT COUNT(*) FROM orders WHERE situation = 'BAG' COLLATE NOCASE").fetchone()[0]
         total_delivery = conn.execute("SELECT COUNT(*) FROM delivery").fetchone()[0]
 
         # ✳️ Livraisons du mois en cours
@@ -312,6 +313,7 @@ def index():
             orders_livree = conn.execute("SELECT COUNT(*) FROM orders WHERE client = ? AND situation = 'LIVREE'", (client_name,)).fetchone()[0]
             orders_encours = conn.execute("SELECT COUNT(*) FROM orders WHERE client = ? AND situation = 'EN COURS'", (client_name,)).fetchone()[0]
             orders_livraison = conn.execute("SELECT COUNT(*) FROM orders WHERE client = ? AND situation = 'LIVRAISON'", (client_name,)).fetchone()[0]
+            orders_bag = conn.execute("SELECT COUNT(*) FROM orders WHERE client = ? AND situation = 'BAG' COLLATE NOCASE",(client_name,)).fetchone()[0]
             total_delivery = conn.execute("SELECT COUNT(*) FROM delivery WHERE client = ?", (client_name,)).fetchone()[0]
             # ✳️ Livraisons du mois pour ce client uniquement
             new_deliveries = conn.execute("""
@@ -359,6 +361,7 @@ def index():
             orders_livree = 0
             orders_encours = 0
             orders_livraison = 0
+            orders_bag = 0
             total_delivery = 0
             new_deliveries = 0
             products_labels = []
@@ -438,6 +441,7 @@ def index():
         orders_livree=orders_livree,
         orders_encours=orders_encours,
         orders_livraison=orders_livraison,
+        orders_bag=orders_bag,
         new_deliveries=new_deliveries,
         months=months_labels,
         monthly_counts=monthly_counts,
@@ -508,6 +512,10 @@ def orders():
     status = request.args.get("status", "all")
     client = request.args.get("client", "").strip()
     product = request.args.get("product", "").strip()
+    cmdcl = request.args.get("cmdcl", "").strip()
+
+    if status and status != "all":
+        status = status.upper()
 
     query = """
         SELECT 
@@ -570,12 +578,18 @@ def orders():
         count_params.extend([start_date, end_date])
 
     if status != "all":
-        query += " AND situation = ?"
-        count_query += " AND situation = ?"
+        query += " AND situation = ? COLLATE NOCASE"
+        count_query += " AND situation = ? COLLATE NOCASE"
         params.append(status)
         count_params.append(status)
 
-    if client and current_user.role == "superadmin":
+    if cmdcl:
+        query += " AND cmdl = ?"
+        count_query += " AND cmdl = ?"
+        params.append(cmdcl)
+        count_params.append(cmdcl)
+
+    if client and current_user.role in ["superadmin","admin"]:
         tokens = [t for t in client.split() if t]
         pattern = "%" + "%".join(tokens) + "%"
         query += " AND client LIKE ? COLLATE NOCASE"
@@ -603,8 +617,14 @@ def orders():
         "SELECT DISTINCT produit FROM orders ORDER BY produit"
     ).fetchall()
 
+    cmdcl_list = conn.execute(
+    "SELECT DISTINCT cmdl FROM orders ORDER BY cmdl DESC"
+    ).fetchall()
+
+
     clients = [c["client"] for c in clients_list if c["client"]]
     products = [p["produit"] for p in products_list if p["produit"]]
+    cmdcls = [c["cmdl"] for c in cmdcl_list if c["cmdl"]]
 
     orders_list = conn.execute(query, params).fetchall()
     total_orders = conn.execute(count_query, count_params).fetchone()[0]
@@ -629,8 +649,32 @@ def orders():
         client=client,
         product=product,
         clients = clients,
-        products=products
+        products=products,
+        cmdcl=cmdcl,
+        cmdcls=cmdcls
     )
+
+@app.route("/api/cmdcl-search")
+@login_required
+def cmdcl_search():
+    term = request.args.get("term", "").strip()
+
+    conn = get_db_connection()
+
+    query = """
+        SELECT DISTINCT cmdl 
+        FROM orders
+        WHERE cmdl LIKE ?
+        ORDER BY cmdl DESC
+        LIMIT 20
+    """
+
+    rows = conn.execute(query, (f"%{term}%",)).fetchall()
+    conn.close()
+
+    results = [{"id": r["cmdl"], "text": r["cmdl"]} for r in rows]
+
+    return {"results": results}
 
 # ---- Orders by client ----
 @app.route("/clients/<int:client_id>/orders")
@@ -766,7 +810,7 @@ def delivery():
         count_params.extend([start_date, end_date])
 
     # --- Client filter ---
-    if client and current_user.role == "superadmin":
+    if client and current_user.role in ["superadmin","admin"]:
         pattern = "%" + "%".join(client.split()) + "%"
         query += " AND client LIKE ? COLLATE NOCASE"
         count_query += " AND client LIKE ? COLLATE NOCASE"
@@ -1108,10 +1152,11 @@ def delete_user(user_id):
 @app.route("/impression")
 @login_required
 def impression():
+
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # ---- récup filtres ----
+    # ---- filtres ----
     period = request.args.get("period", "all")
     article = (request.args.get("article") or "").strip()
     user = (request.args.get("user") or "").strip()
@@ -1125,6 +1170,9 @@ def impression():
 
     today = date.today()
 
+    # =========================
+    # 📅 Gestion périodes
+    # =========================
     def period_bounds(period, start, end):
         if period == "all":
             return None, None
@@ -1135,16 +1183,14 @@ def impression():
             return d, d
         if period == "week":
             monday = today - timedelta(days=today.weekday())
-            sunday = monday + timedelta(days=6)
-            return monday, sunday
+            return monday, monday + timedelta(days=6)
         if period == "month":
             first = today.replace(day=1)
-            last = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+            last = date(today.year, today.month,
+                        calendar.monthrange(today.year, today.month)[1])
             return first, last
         if period == "year":
-            first = date(today.year, 1, 1)
-            last = date(today.year, 12, 31)
-            return first, last
+            return date(today.year,1,1), date(today.year,12,31)
         if period == "custom" and start and end:
             try:
                 return date.fromisoformat(start), date.fromisoformat(end)
@@ -1154,54 +1200,104 @@ def impression():
 
     start_date, end_date = period_bounds(period, start, end)
 
-    # ---- requête ----
-    query = "SELECT num_impression, date_impression, hr, num_commande, machine, article, feuilles, etuis, user, datetime(date(date_impression) || ' ' || IFNULL(hr,'00:00')) AS datetime_full FROM impressions WHERE 1=1"
-    count_query = "SELECT COUNT(*) FROM impressions WHERE 1=1"
+    # =========================
+    # 🎯 WHERE dynamique
+    # =========================
+    where_clauses = []
     params = []
-    count_params = []
 
-    # filtre période
+    # période
     if start_date and end_date:
-        query += " AND date(date_impression) BETWEEN date(?) AND date(?)"
-        count_query += " AND date(date_impression) BETWEEN date(?) AND date(?)"
+        where_clauses.append(
+            "date(date_impression) BETWEEN date(?) AND date(?)"
+        )
         params.extend([start_date, end_date])
-        count_params.extend([start_date, end_date])
 
-    # filtre article
+    # article
     if article:
         pattern = "%" + "%".join(article.split()) + "%"
-        query += " AND article LIKE ?"
-        count_query += " AND article LIKE ?"
+        where_clauses.append("article LIKE ?")
         params.append(pattern)
-        count_params.append(pattern)
 
-    # filtre utilisateur
+    # user
     if user:
         pattern = "%" + "%".join(user.split()) + "%"
-        query += " AND user LIKE ?"
-        count_query += " AND user LIKE ?"
+        where_clauses.append("user LIKE ?")
         params.append(pattern)
-        count_params.append(pattern)
 
-    # tri + pagination
-    query += " ORDER BY date_impression DESC LIMIT ? OFFSET ?"
-    params.extend([per_page, offset])
+    where_sql = ""
+    if where_clauses:
+        where_sql = " WHERE " + " AND ".join(where_clauses)
 
-    rows = cur.execute(query, params).fetchall()
-    total = cur.execute(count_query, count_params).fetchone()[0]
+    # =========================
+    # 📦 DATA QUERY
+    # =========================
+    data_query = f"""
+        SELECT 
+            num_impression,
+            date_impression,
+            hr,
+            num_commande,
+            machine,
+            article,
+            feuilles,
+            etuis,
+            user,
+            datetime(date(date_impression) || ' ' || IFNULL(hr,'00:00')) AS datetime_full
+        FROM impressions
+        {where_sql}
+        ORDER BY date_impression DESC
+        LIMIT ? OFFSET ?
+    """
 
-    # totals
-    total_feuilles = cur.execute("SELECT SUM(feuilles) FROM impressions").fetchone()[0] or 0
-    total_etuis = cur.execute("SELECT SUM(etuis) FROM impressions").fetchone()[0] or 0
+    rows = cur.execute(
+        data_query,
+        params + [per_page, offset]
+    ).fetchall()
 
-    # --- Récup listes uniques pour filtres ---
-    users = [r[0] for r in cur.execute("SELECT DISTINCT user FROM impressions ORDER BY user").fetchall()]
-    articles = [r[0] for r in cur.execute("SELECT DISTINCT article FROM impressions ORDER BY article").fetchall()]
+    # =========================
+    # 🔢 COUNT QUERY
+    # =========================
+    count_query = f"""
+        SELECT COUNT(*) 
+        FROM impressions
+        {where_sql}
+    """
+
+    total = cur.execute(count_query, params).fetchone()[0]
+
+    # =========================
+    # 📊 TOTALS QUERY
+    # =========================
+    totals_query = f"""
+        SELECT 
+            COALESCE(SUM(feuilles),0),
+            COALESCE(SUM(etuis),0)
+        FROM impressions
+        {where_sql}
+    """
+
+    total_feuilles, total_etuis = cur.execute(
+        totals_query,
+        params
+    ).fetchone()
+
+    # =========================
+    # 📋 listes filtres
+    # =========================
+    users = [r[0] for r in cur.execute(
+        "SELECT DISTINCT user FROM impressions ORDER BY user"
+    ).fetchall()]
+
+    articles = [r[0] for r in cur.execute(
+        "SELECT DISTINCT article FROM impressions ORDER BY article"
+    ).fetchall()]
 
     conn.close()
 
+    # pagination info
     total_pages = (total + per_page - 1) // per_page
-    start_idx = offset + 1 if total > 0 else 0
+    start_idx = offset + 1 if total else 0
     end_idx = min(offset + per_page, total)
 
     return render_template(
@@ -1227,10 +1323,11 @@ def impression():
 @app.route("/decoupe")
 @login_required
 def decoupe():
+
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # ---- récup filtres ----
+    # ---- filtres ----
     period = request.args.get("period", "all")
     user = (request.args.get("user") or "").strip()
     article = (request.args.get("article") or "").strip()
@@ -1244,7 +1341,9 @@ def decoupe():
 
     today = date.today()
 
-    # ---- période ----
+    # =========================
+    # 📅 Gestion périodes
+    # =========================
     def get_bounds(period, start, end):
         if period == "all": return None, None
         if period == "today": return today, today
@@ -1253,16 +1352,14 @@ def decoupe():
             return d, d
         if period == "week":
             mon = today - timedelta(days=today.weekday())
-            sun = mon + timedelta(days=6)
-            return mon, sun
+            return mon, mon + timedelta(days=6)
         if period == "month":
             first = today.replace(day=1)
-            last = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+            last = date(today.year, today.month,
+                        calendar.monthrange(today.year, today.month)[1])
             return first, last
         if period == "year":
-            first = date(today.year, 1, 1)
-            last = date(today.year, 12, 31)
-            return first, last
+            return date(today.year,1,1), date(today.year,12,31)
         if period == "custom" and start and end:
             try:
                 return date.fromisoformat(start), date.fromisoformat(end)
@@ -1272,58 +1369,102 @@ def decoupe():
 
     start_date, end_date = get_bounds(period, start, end)
 
-    # ---- construction requêtes ----
-    query = """
-        SELECT num_decoupage, num_impression, date_decoupage, hr,
-               num_commande, maquette_id, description, feuilles, user,
-               datetime(date(date_decoupage) || ' ' || IFNULL(hr,'00:00')) AS datetime_full
-        FROM decoupage WHERE 1=1
-    """
-    count_query = "SELECT COUNT(*) FROM decoupage WHERE 1=1"
+    # =========================
+    # 🎯 WHERE dynamique
+    # =========================
+    where_clauses = []
     params = []
-    count_params = []
 
     # période
     if start_date and end_date:
-        query += " AND date(date_decoupage) BETWEEN date(?) AND date(?)"
-        count_query += " AND date(date_decoupage) BETWEEN date(?) AND date(?)"
+        where_clauses.append(
+            "date(date_decoupage) BETWEEN date(?) AND date(?)"
+        )
         params.extend([start_date, end_date])
-        count_params.extend([start_date, end_date])
 
-    # article
+    # article (description)
     if article:
         pattern = "%" + "%".join(article.split()) + "%"
-        query += " AND description LIKE ?"
-        count_query += " AND description LIKE ?"
+        where_clauses.append("description LIKE ?")
         params.append(pattern)
-        count_params.append(pattern)
 
-    # utilisateur
+    # user
     if user:
         pattern = "%" + "%".join(user.split()) + "%"
-        query += " AND user LIKE ?"
-        count_query += " AND user LIKE ?"
+        where_clauses.append("user LIKE ?")
         params.append(pattern)
-        count_params.append(pattern)
 
-    # tri + pagination
-    query += " ORDER BY num_decoupage DESC LIMIT ? OFFSET ?"
-    params.extend([per_page, offset])
+    where_sql = ""
+    if where_clauses:
+        where_sql = " WHERE " + " AND ".join(where_clauses)
 
-    rows = cur.execute(query, params).fetchall()
-    total = cur.execute(count_query, count_params).fetchone()[0]
+    # =========================
+    # 📦 DATA QUERY
+    # =========================
+    data_query = f"""
+        SELECT 
+            num_decoupage,
+            num_impression,
+            date_decoupage,
+            hr,
+            num_commande,
+            maquette_id,
+            description,
+            feuilles,
+            user,
+            datetime(date(date_decoupage) || ' ' || IFNULL(hr,'00:00')) AS datetime_full
+        FROM decoupage
+        {where_sql}
+        ORDER BY num_decoupage DESC
+        LIMIT ? OFFSET ?
+    """
 
-    # total feuilles découpées
-    total_feuilles = cur.execute("SELECT SUM(feuilles) FROM decoupage").fetchone()[0] or 0
+    rows = cur.execute(
+        data_query,
+        params + [per_page, offset]
+    ).fetchall()
 
-    # listes distinctes pour Select2
-    users = [r[0] for r in cur.execute("SELECT DISTINCT user FROM decoupage ORDER BY user").fetchall()]
-    articles = [r[0] for r in cur.execute("SELECT DISTINCT description FROM decoupage ORDER BY description").fetchall()]
+    # =========================
+    # 🔢 COUNT
+    # =========================
+    count_query = f"""
+        SELECT COUNT(*)
+        FROM decoupage
+        {where_sql}
+    """
+
+    total = cur.execute(count_query, params).fetchone()[0]
+
+    # =========================
+    # 📊 TOTALS FILTRÉS
+    # =========================
+    totals_query = f"""
+        SELECT COALESCE(SUM(feuilles),0)
+        FROM decoupage
+        {where_sql}
+    """
+
+    total_feuilles = cur.execute(
+        totals_query,
+        params
+    ).fetchone()[0]
+
+    # =========================
+    # 📋 Listes filtres
+    # =========================
+    users = [r[0] for r in cur.execute(
+        "SELECT DISTINCT user FROM decoupage ORDER BY user"
+    ).fetchall()]
+
+    articles = [r[0] for r in cur.execute(
+        "SELECT DISTINCT description FROM decoupage ORDER BY description"
+    ).fetchall()]
 
     conn.close()
 
+    # pagination info
     total_pages = (total + per_page - 1) // per_page
-    start_idx = offset + 1 if total > 0 else 0
+    start_idx = offset + 1 if total else 0
     end_idx = min(offset + per_page, total)
 
     return render_template(
@@ -1347,23 +1488,31 @@ def decoupe():
 @app.route("/pliage")
 @login_required
 def pliage():
+
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Filtres
+    # =========================
+    # 🔎 Filtres
+    # =========================
     period = request.args.get("period", "all")
     user = (request.args.get("user") or "").strip()
     article = (request.args.get("article") or "").strip()
     start = request.args.get("start") or ""
     end = request.args.get("end") or ""
 
-    # Pagination
+    # =========================
+    # 📄 Pagination
+    # =========================
     page = request.args.get("page", 1, type=int)
     per_page = 20
     offset = (page - 1) * per_page
 
     today = date.today()
 
+    # =========================
+    # 📅 Périodes
+    # =========================
     def period_bounds(period, start, end):
         if period == "all": return None, None
         if period == "today": return today, today
@@ -1372,16 +1521,14 @@ def pliage():
             return d, d
         if period == "week":
             mon = today - timedelta(days=today.weekday())
-            sun = mon + timedelta(days=6)
-            return mon, sun
+            return mon, mon + timedelta(days=6)
         if period == "month":
             first = today.replace(day=1)
-            last = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+            last = date(today.year, today.month,
+                        calendar.monthrange(today.year, today.month)[1])
             return first, last
         if period == "year":
-            first = date(today.year, 1, 1)
-            last = date(today.year, 12, 31)
-            return first, last
+            return date(today.year,1,1), date(today.year,12,31)
         if period == "custom" and start and end:
             try:
                 return date.fromisoformat(start), date.fromisoformat(end)
@@ -1391,48 +1538,95 @@ def pliage():
 
     start_date, end_date = period_bounds(period, start, end)
 
-    # Base query
-    query = "SELECT *, datetime(date(date_pliage) || ' ' || IFNULL(hr,'00:00')) AS datetime_full FROM pliage WHERE 1=1"
+    # =========================
+    # 🎯 WHERE dynamique
+    # =========================
+    where_clauses = []
     params = []
 
-    # Date filter
+    # Date
     if start_date and end_date:
-        query += " AND date(date_pliage) BETWEEN date(?) AND date(?)"
-        params += [start_date, end_date]
+        where_clauses.append(
+            "date(date_pliage) BETWEEN date(?) AND date(?)"
+        )
+        params.extend([start_date, end_date])
 
-    # User filter
+    # User
     if user:
         pattern = "%" + "%".join(user.split()) + "%"
-        query += " AND user LIKE ?"
+        where_clauses.append("user LIKE ?")
         params.append(pattern)
 
-    # Article filter
+    # Article
     if article:
         pattern = "%" + "%".join(article.split()) + "%"
-        query += " AND description LIKE ?"
+        where_clauses.append("description LIKE ?")
         params.append(pattern)
 
-    # Count
-    count_q = "SELECT COUNT(*) FROM (" + query + ")"
-    total = cur.execute(count_q, params).fetchone()[0]
+    where_sql = ""
+    if where_clauses:
+        where_sql = " WHERE " + " AND ".join(where_clauses)
 
-    # Pagination
-    query += " ORDER BY date_pliage DESC LIMIT ? OFFSET ?"
-    params += [per_page, offset]
+    # =========================
+    # 📦 DATA QUERY
+    # =========================
+    data_query = f"""
+        SELECT *,
+            datetime(date(date_pliage) || ' ' || IFNULL(hr,'00:00')) AS datetime_full
+        FROM pliage
+        {where_sql}
+        ORDER BY date_pliage DESC
+        LIMIT ? OFFSET ?
+    """
 
-    rows = cur.execute(query, params).fetchall()
+    rows = cur.execute(
+        data_query,
+        params + [per_page, offset]
+    ).fetchall()
 
-    # Totaux
-    total_qte = cur.execute("SELECT SUM(qte_pli) FROM pliage").fetchone()[0] or 0
+    # =========================
+    # 🔢 COUNT
+    # =========================
+    count_query = f"""
+        SELECT COUNT(*)
+        FROM pliage
+        {where_sql}
+    """
 
-    # Filtres distincts
-    users = [r[0] for r in cur.execute("SELECT DISTINCT user FROM pliage ORDER BY user").fetchall()]
-    articles = [r[0] for r in cur.execute("SELECT DISTINCT description FROM pliage ORDER BY description").fetchall()]
+    total = cur.execute(count_query, params).fetchone()[0]
+
+    # =========================
+    # 📊 TOTALS FILTRÉS
+    # =========================
+    totals_query = f"""
+        SELECT COALESCE(SUM(qte_pli),0)
+        FROM pliage
+        {where_sql}
+    """
+
+    total_qte = cur.execute(
+        totals_query,
+        params
+    ).fetchone()[0]
+
+    # =========================
+    # 📋 Listes filtres
+    # =========================
+    users = [r[0] for r in cur.execute(
+        "SELECT DISTINCT user FROM pliage ORDER BY user"
+    ).fetchall()]
+
+    articles = [r[0] for r in cur.execute(
+        "SELECT DISTINCT description FROM pliage ORDER BY description"
+    ).fetchall()]
 
     conn.close()
 
+    # =========================
+    # 📄 Pagination info
+    # =========================
     total_pages = (total + per_page - 1) // per_page
-    start_idx = offset + 1 if total > 0 else 0
+    start_idx = offset + 1 if total else 0
     end_idx = min(offset + per_page, total)
 
     return render_template(
@@ -1452,6 +1646,7 @@ def pliage():
         users=users,
         articles=articles
     )
+
 
 if __name__ == "__main__":
     #app.run(debug=True, port=8888)

@@ -42,10 +42,21 @@
       <select name="status" class="form-select" onchange="this.form.submit()">
         <option value="all">Tous</option>
         <option value="EN COURS" {% if status=='EN COURS' %}selected{% endif %}>En cours</option>
+        <option value="BAG" {% if status=='BAG' %}selected{% endif %}>BAG</option>
         <option value="LIVRAISON" {% if status=='LIVRAISON' %}selected{% endif %}>Livraison</option>
         <option value="LIVREE" {% if status=='LIVREE' %}selected{% endif %}>Livrée</option>
       </select>
     </div>
+
+    <!-- 🔢 CmdCL -->
+<div class="col-md">
+  <label class="form-label fw-semibold">🔢 CmdCL</label>
+  <select id="cmdcl_filter" name="cmdcl" class="form-select">
+    {% if cmdcl %}
+      <option value="{{ cmdcl }}" selected>{{ cmdcl }}</option>
+    {% endif %}
+  </select>
+</div>
 
     {% if current_user.role in ['superadmin', 'admin'] %}
     <!-- 🏢 Client -->
@@ -120,6 +131,8 @@
                 <span class="badge bg-success-subtle text-success">Livrée</span>
               {% elif o.situation == 'LIVRAISON' %}
                 <span class="badge bg-info-subtle text-info">Livraison</span>
+              {% elif o.situation|upper == 'BAG' %}
+                <span class="badge bg-bag-subtle text-bag">BAG</span>
               {% elif o.situation == 'EN COURS' %}
                 <span class="badge bg-warning-subtle text-warning">En cours</span>
               {% endif %}
@@ -128,6 +141,7 @@
             <td class="d-none d-lg-table-cell">{{ o.total_livre }}</td>
             <td class="d-none d-lg-table-cell">{{ o.reste }}</td>
 
+            {% if o.situation in ['LIVRAISON','LIVREE'] %}
             <td class="text-center">
               <a href="{{ url_for('order_delivery', order_id=o.num_reservation) }}"
                  class="btn btn-sm btn-subtle"
@@ -135,6 +149,7 @@
                 <i class="bi bi-eye"></i>
               </a>
             </td>
+            {% endif %}
           </tr>
           {% endfor %}
         </tbody>
@@ -146,7 +161,7 @@
     </p>
 
     {% set endpoint='orders' %}
-    {% set params={'period':period,'status':status,'client':client,'product':product,'start':start,'end':end} %}
+    {% set params={'period':period,'status':status,'cmdcl':cmdcl,'client':client,'product':product,'start':start,'end':end} %}
     {% include 'pagination.html' %}
   </div>
 </div>
@@ -186,6 +201,37 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll('input[type="date"]').forEach(el=>{
     el.addEventListener("change", submitFilters);
   });
+
+  // Select2 cmdcl
+  // Select2 CmdCL AJAX
+$("#cmdcl_filter").select2({
+  placeholder: "Tous",
+  allowClear: true,
+  width: "100%",
+  minimumInputLength: 1,
+  language: {
+    inputTooShort: function () {
+      return "";
+    }
+  },
+  ajax: {
+    url: "/api/cmdcl-search",
+    dataType: "json",
+    delay: 250,
+
+    data: function(params){
+      return {
+        term: params.term
+      };
+    },
+
+    processResults: function(data){
+      return data;
+    },
+
+    cache: true
+  }
+}).on("change", submitFilters);
 
   // Select2 client
   if ($("#client_filter").length){

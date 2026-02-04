@@ -1675,3 +1675,13 @@ footer {
 html {
   scrollbar-gutter: stable;
 }
+
+
+  /*  Badge pour statut BAG  */
+.bg-bag-subtle {
+  background: rgba(251,146,60,0.15) !important;
+}
+
+.text-bag {
+  color: #fb923c !important;
+}

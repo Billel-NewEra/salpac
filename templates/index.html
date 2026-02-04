@@ -2,6 +2,18 @@
 {% block title %}Dashboard - SALPAC{% endblock %}
 
 {% block content %}
+
+<style>
+  /* css pour BAG */
+  .bg-bag-subtle {
+  background: rgba(251,146,60,0.15) !important;
+}
+
+.text-bag {
+  color: #fb923c !important;
+}
+
+</style>
 {% if session.pop("welcome", None) and current_user.is_authenticated %}
 <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2000;">
   <div id="welcomeToast" class="toast align-items-center text-bg-primary border-0 shadow-lg"
@@ -59,6 +71,17 @@
         <div class="command-text">
           <div class="fw-semibold text-white">{{ orders_encours }} nouvelles commandes</div>
           <div class="text-secondary small">En cours</div>
+        </div>
+      </div>
+
+      <!-- BAG -->
+      <div class="command-item mb-3">
+        <div class="bg-bag-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
+          <iconify-icon icon="solar:archive-line-duotone" class="fs-4 text-bag"></iconify-icon>
+        </div>
+        <div class="command-text">
+          <div class="fw-semibold text-white">{{ orders_bag }} commandes</div>
+          <div class="text-secondary small">en BAG</div>
         </div>
       </div>
 
@@ -173,12 +196,13 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const seriesData = [
-    {{ orders_livree|default(0) }},
     {{ orders_encours|default(0) }},
-    {{ orders_livraison|default(0) }}
+    {{ orders_bag|default(0) }},
+    {{ orders_livraison|default(0) }},
+    {{ orders_livree|default(0) }},
   ];
-  const labels = ['Livrées', 'En cours', 'En livraison'];
-  const colors = ['#22C55E', '#E9B949', '#49BEFF'];
+  const labels = ['En cours', 'en BAG', 'En livraison', 'Livrées' ];
+  const colors = ['#E9B949', '#FB923C', '#49BEFF', '#22C55E', ];
 
   const options = {
     chart: { 

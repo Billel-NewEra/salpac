@@ -52,10 +52,13 @@
 
             <!-- Statut -->
             <td>
+              {% set s = o.situation|upper %}
               {% if o.situation == "LIVREE" %}
                 <span class="badge bg-success-subtle text-success border-success-subtle">Livrée</span>
               {% elif o.situation == "LIVRAISON" %}
                 <span class="badge bg-info-subtle text-info border-info-subtle">Livraison</span>
+              {% elif s == 'BAG' %}
+                <span class="badge bg-bag-subtle text-bag">BAG</span>
               {% elif o.situation == "EN COURS" %}
                 <span class="badge bg-warning-subtle text-warning border-warning-subtle">En cours</span>
               {% else %}
@@ -76,6 +79,7 @@
             </td>
 
             <!-- Actions -->
+            {% if o.situation in ['LIVRAISON','LIVREE'] %} 
             <td class="text-center">
               <div class="actions-cell">
                 <a href="{{ url_for('order_delivery',
@@ -89,6 +93,7 @@
                 </a>
               </div>
             </td>
+            {% endif %}
           </tr>
           {% endfor %}
         </tbody>
