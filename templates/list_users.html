@@ -27,11 +27,40 @@
 
 
 }
+.btn-create-user-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 
+  font-size: 0.8rem;
+  padding: 5px 12px;
+
+  background: rgba(93,135,255,0.12);
+  color: #8FB1FF;
+  border: 1px solid rgba(93,135,255,0.35);
+  border-radius: 999px;
+
+  text-decoration: none;
+  font-weight: 500;
+  transition: all .18s ease;
+}
+
+.btn-create-user-mini:hover {
+  background: rgba(93,135,255,0.22);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(93,135,255,.25);
+}
 
 </style>
 
-<h4 class="mb-3"><i class="bi bi-person-lines-fill me-1 text-admin-connexion"></i> Gestion des comptes clients</h4>
+<h4 class="mb-3"><i class="bi bi-person-lines-fill me-1 text-admin-connexion"></i> Gestion des comptes utilisateurs</h4>
+<div class="d-flex justify-content-center mb-3">
+  <a href="{{ url_for('create_user') }}" class="btn-create-user-mini">
+    <i class="bi bi-person-plus"></i>
+    Nouveau
+  </a>
+</div>
 
 <div class="card widget" id="usersCard">
   <div class="card-body p-2">
@@ -52,7 +81,11 @@
             <td class="d-none d-md-table-cell">{{ u.id }}</td>
             <td>{{ u.username }}</td>
             <td class="d-none d-md-table-cell">
-              {% if u.role == "admin" %}
+              {% if u.role == "superadmin" %}
+                <span class="badge bg-warning-subtle text-warning border-warning-subtle">
+                  <i class="bi bi-award-fill me-1"></i>Superadmin
+                </span>
+              {% elif u.role == "admin" %}
                 <span class="badge bg-danger-subtle text-danger border-danger-subtle">
                   <i class="bi bi-person-gear me-1"></i>Admin
                 </span>
@@ -65,7 +98,11 @@
             <td>{{ u.client_name if u.client_name else "-" }}</td>
             <td class="text-center">
               <div class="actions-cell">
-                {% if u.role != "admin" %}
+                {% if
+                  (current_user.role == "superadmin" and u.role != "superadmin")
+                  or
+                  (current_user.role == "admin" and u.role == "client")
+                %}
                 <form action="{{ url_for('delete_user', user_id=u.id) }}" method="post" style="display:inline;">
                   <button type="submit"
                     class="btn btn-sm btn-danger btn-delete-user"

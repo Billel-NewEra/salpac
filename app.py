@@ -67,7 +67,7 @@ def get_weekly_activity():
     conn = get_db_connection()
 
     # --- Sélection selon le rôle de l'utilisateur ---
-    if current_user.role == "admin":
+    if current_user.role in ("superadmin", "admin"):
         query = """
             SELECT 
                 strftime('%W', date_reservation) AS week,
@@ -243,11 +243,12 @@ def home():
 def index():
     conn = get_db_connection()
     now = datetime.now()
+    #now = datetime(2026, 1, 30)
     current_month = f"{now.month:02d}"
     current_year = str(now.year)
 
     # Vue admin → totaux globaux
-    if current_user.role == "admin":
+    if current_user.role in ("superadmin", "admin"):
         total_clients = conn.execute("SELECT COUNT(*) FROM client").fetchone()[0]
         total_orders = conn.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
         orders_livree = conn.execute("SELECT COUNT(*) FROM orders WHERE situation = 'LIVREE'").fetchone()[0]
@@ -265,10 +266,12 @@ def index():
         top_products = conn.execute("""
             SELECT produit, COUNT(*) AS nb_livraisons
             FROM delivery
+            WHERE strftime('%m', date_livraison) = ?
+                AND strftime('%Y', date_livraison) = ?
             GROUP BY produit
             ORDER BY nb_livraisons DESC
             LIMIT 6
-        """).fetchall()
+        """, (current_month, current_year)).fetchall()
 
         products_labels = [row["produit"] for row in top_products]
         products_counts = [row["nb_livraisons"] for row in top_products]
@@ -288,6 +291,7 @@ def index():
                 COUNT(*) AS total
             FROM orders
             WHERE situation IS NOT NULL
+                AND date_reservation >= date('now','-6 days')
             GROUP BY jour
         """).fetchall()
     else:
@@ -313,10 +317,12 @@ def index():
                 SELECT produit, COUNT(*) AS nb_livraisons
                 FROM delivery
                 WHERE client = ?
+                    AND strftime('%m', date_livraison) = ?
+                    AND strftime('%Y', date_livraison) = ?
                 GROUP BY produit
                 ORDER BY nb_livraisons DESC
                 LIMIT 6
-            """, (client_name,)).fetchall()
+            """, (client_name, current_month, current_year)).fetchall()
 
             products_labels = [row["produit"] for row in top_products]
             products_counts = [row["nb_livraisons"] for row in top_products]
@@ -335,7 +341,9 @@ def index():
                     END AS jour,
                     COUNT(*) AS total
                 FROM orders
-                WHERE client = ? AND situation IS NOT NULL
+                WHERE client = ? 
+                    AND situation IS NOT NULL
+                    AND date_reservation >= date('now','-6 days')
                 GROUP BY jour
             """, (client_name,)).fetchall()
         else:
@@ -351,11 +359,12 @@ def index():
             orders_raw = []
 
     # ✅ 1️⃣ Nouveau bloc : nombre de commandes par mois
-    if current_user.role == "admin":
+    if current_user.role in ("superadmin", "admin"):
         rows = conn.execute("""
             SELECT strftime('%m', date_reservation) AS mois, COUNT(*) AS total
             FROM orders
             WHERE date_reservation IS NOT NULL
+                AND strftime('%Y', date_reservation) = strftime('%Y','now')
             GROUP BY mois
             ORDER BY mois
         """).fetchall()
@@ -364,6 +373,7 @@ def index():
             SELECT strftime('%m', date_reservation) AS mois, COUNT(*) AS total
             FROM orders
             WHERE client = ? AND date_reservation IS NOT NULL
+                AND strftime('%Y', date_reservation) = strftime('%Y','now')
             GROUP BY mois
             ORDER BY mois
         """, (client_name,)).fetchall()
@@ -376,15 +386,17 @@ def index():
         monthly_counts[month_index] = r['total']
 
     # ✅ 3️⃣ Commandes par client
-    if current_user.role == "admin":
+    if current_user.role in ("superadmin", "admin"):
         rows_clients = conn.execute("""
             SELECT client, COUNT(*) as total
             FROM orders
             WHERE client IS NOT NULL
+                AND strftime('%m', date_reservation) = ?
+                AND strftime('%Y', date_reservation) = ?
             GROUP BY client
             ORDER BY total DESC
             LIMIT 6
-        """).fetchall()
+        """, (current_month, current_year)).fetchall()
     else:
         # Si client, on montre ses produits ou rien
         rows_clients = conn.execute("""
@@ -551,7 +563,7 @@ def orders():
         params.append(status)
         count_params.append(status)
 
-    if client and current_user.role == "admin":
+    if client and current_user.role == "superadmin":
         tokens = [t for t in client.split() if t]
         pattern = "%" + "%".join(tokens) + "%"
         query += " AND client LIKE ? COLLATE NOCASE"
@@ -742,7 +754,7 @@ def delivery():
         count_params.extend([start_date, end_date])
 
     # --- Client filter ---
-    if client and current_user.role == "admin":
+    if client and current_user.role == "superadmin":
         pattern = "%" + "%".join(client.split()) + "%"
         query += " AND client LIKE ? COLLATE NOCASE"
         count_query += " AND client LIKE ? COLLATE NOCASE"
@@ -916,8 +928,8 @@ def order_delivery(order_id):
 @app.route("/admin/create_user", methods=["GET", "POST"])
 @login_required
 def create_user():
-    if current_user.role != "admin":
-        flash("Accès refusé : réservé aux administrateurs ❌", "danger")
+    if current_user.role not in ("admin", "superadmin"):
+        flash("Accès refusé : réservé aux administrateurs !", "danger")
         return redirect(url_for("index"))
 
     # --- Liste des clients depuis local.sqlite ---
@@ -928,26 +940,36 @@ def create_user():
     if request.method == "POST":
         username = request.form["username"].strip()
         password = request.form["password"].strip()
-        client_id = int(request.form["client_id"])
+        role = request.form.get("role", "client")
+
+        # Sécurité superadmin
+        if role == "admin" and current_user.role != "superadmin":
+            flash("Seul un superadmin peut créer un admin", "danger")
+            return redirect(url_for("create_user"))
+        
+        if role == "admin":
+            client_id = None
+        else:
+            client_id = int(request.form["client_id"])
 
         conn_auth = get_auth_connection()
 
         exists = conn_auth.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
         
         if exists:
-            flash("❌ Ce nom d'utilisateur existe déjà", "danger")
+            flash("Username déjà existant", "danger")
             conn_auth.close()
             return redirect(url_for("create_user"))
 
         password_hash = generate_password_hash(password)
         conn_auth.execute(
             "INSERT INTO users (username, password_hash, role, client_id) VALUES (?, ?, ?, ?)",
-            (username, password_hash, "client", client_id)
+            (username, password_hash, role, client_id)
         )
         conn_auth.commit()
         conn_auth.close()
 
-        flash(f"✅ Compte '{username}' créé avec succès", "success")
+        flash(f"✅ Compte '{username}' créé", "success")
         # Redirection vers la page des utilisateurs, pas celle des clients
         return redirect(url_for("list_users"))
 
@@ -958,7 +980,9 @@ def create_user():
 @login_required
 def list_users():
 
-    if current_user.role != "admin":
+    print(current_user.role)
+
+    if current_user.role not in ["superadmin", "admin"]:
         flash("Accès refusé ❌", "danger")
         return redirect(url_for("index"))
 
@@ -976,7 +1000,9 @@ def list_users():
     users = conn_auth.execute("""
         SELECT id, username, role, client_id, is_active, created_at
         FROM users
-        ORDER BY id ASC
+        ORDER BY 
+            CASE role WHEN 'superadmin' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,
+            id ASC
         LIMIT ? OFFSET ?
     """, (per_page, offset)).fetchall()
 
@@ -1020,16 +1046,50 @@ def list_users():
 @app.route("/admin/users/delete/<int:user_id>", methods=["POST"])
 @login_required
 def delete_user(user_id):
-    if current_user.role != "admin":
+
+    if current_user.role not in ["superadmin", "admin"]:
         flash("Accès refusé ❌", "danger")
         return redirect(url_for("index"))
 
     conn_auth = get_auth_connection()
-    conn_auth.execute("DELETE FROM users WHERE id = ?", (user_id,))
+
+    # Vérifier utilisateur cible
+    user = conn_auth.execute(
+        "SELECT id, role FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()
+
+    if not user:
+        flash("Utilisateur introuvable ❌", "danger")
+        conn_auth.close()
+        return redirect(url_for("list_users"))
+
+    # ❌ Interdire suppression superadmin
+    if user["role"] == "superadmin":
+        flash("Impossible de supprimer un superadmin ❌", "danger")
+        conn_auth.close()
+        return redirect(url_for("list_users"))
+    
+    # ❌ admin ne peut pas supprimer admin
+    if current_user.role == "admin" and user["role"] == "admin":
+        flash("Un admin ne peut pas supprimer un autre admin", "danger")
+        return redirect(url_for("list_users"))
+
+    # ❌ Empêcher auto-suppression
+    if user["id"] == current_user.id:
+        flash("Vous ne pouvez pas vous supprimer vous-même ❌", "danger")
+        conn_auth.close()
+        return redirect(url_for("list_users"))
+
+    # ✅ Suppression autorisée
+    conn_auth.execute(
+        "DELETE FROM users WHERE id = ?",
+        (user_id,)
+    )
     conn_auth.commit()
     conn_auth.close()
 
-    flash("✅ Utilisateur supprimé avec succès", "success")
+    flash("✅ Utilisateur supprimé", "success")
     return redirect(url_for("list_users"))
 
 

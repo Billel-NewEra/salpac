@@ -15,12 +15,27 @@ CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   username      TEXT    NOT NULL UNIQUE,
   password_hash TEXT    NOT NULL,
-  role          TEXT    NOT NULL CHECK (role IN ('admin','client')),
+  role          TEXT    NOT NULL CHECK (role IN ('superadmin', 'admin','client')),
   client_id     INTEGER,
   is_active     INTEGER NOT NULL DEFAULT 1,
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_users_client_id ON users(client_id);
+
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  credential_id BLOB NOT NULL UNIQUE,
+  public_key BLOB NOT NULL,
+  sign_count INTEGER NOT NULL DEFAULT 0,
+  transports TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  last_used_at TEXT,
+  FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_webauthn_user_id
+ON webauthn_credentials(user_id);
 """
 
 # ==============================
@@ -42,7 +57,7 @@ def upsert_admin(conn, username, password):
         return
     pwd_hash = generate_password_hash(password)
     conn.execute(
-        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'admin')",
+        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'superadmin')",
         (username, pwd_hash),
     )
     conn.commit()
@@ -73,8 +88,8 @@ def list_existing_users(conn):
 def main():
     ap = argparse.ArgumentParser(description="Créer ou vérifier l'utilisateur admin dans auth.sqlite")
     ap.add_argument("--db", default=AUTH_DB, help="Chemin vers la base SQLite d'authentification")
-    ap.add_argument("--username", default="admin", help="Nom d'utilisateur admin")
-    ap.add_argument("--password", help="Mot de passe admin (sinon, demande interactive)")
+    ap.add_argument("--username", default="superadmin", help="Nom d'utilisateur superadmin")
+    ap.add_argument("--password", help="Mot de passe superadmin (sinon, demande interactive)")
     args = ap.parse_args()
 
     # Si aucun mot de passe fourni → on le demande à l’écran
@@ -83,6 +98,7 @@ def main():
 
     # Vérifie le dossier
     os.makedirs(os.path.dirname(args.db), exist_ok=True)
+    print(f"\n📦 Base d'authentification : {args.db}")
 
     # Connexion
     conn = sqlite3.connect(args.db)
@@ -93,8 +109,7 @@ def main():
     finally:
         conn.close()
 
-    print(f"\n📦 Base d'authentification : {args.db}")
-    print(f"🕒 Exécution terminée le {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    #print(f"🕒 Exécution terminée le {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 # ==============================
 # Entrée principale

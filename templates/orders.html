@@ -47,7 +47,7 @@
       </select>
     </div>
 
-    {% if current_user.role == 'admin' %}
+    {% if current_user.role in ['superadmin', 'admin'] %}
     <!-- 🏢 Client -->
     <div class="col-md">
       <label class="form-label fw-semibold">🏢 Client</label>
@@ -83,7 +83,7 @@
           <tr>
             <th class="d-none d-md-table-cell">#</th>
             <th>CmdCL</th>
-            {% if current_user.role == 'admin' %}
+            {% if current_user.role in ['superadmin', 'admin'] %}
             <th class="d-none d-md-table-cell">Client</th>
             {% endif %}
             <th>Produit</th>
@@ -102,7 +102,7 @@
             <td class="d-none d-md-table-cell">{{ o.num_reservation }}</td>
             <td>{{ o.cmdl }}</td>
 
-            {% if current_user.role == 'admin' %}
+            {% if current_user.role in ['superadmin', 'admin'] %}
             <td class="d-none d-md-table-cell text-truncate" style="max-width:160px;">
               {{ o.client }}
             </td>

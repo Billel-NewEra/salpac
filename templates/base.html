@@ -151,6 +151,12 @@
   text-shadow:0 0 8px rgba(73,190,255,.4);
   text-transform: capitalize;
 }
+
+/* Animation sidebar  */
+.sidebar{
+  background: rgba(15,23,42,.85);
+  backdrop-filter: blur(10px);
+}
     </style>
   </head>
 
@@ -186,24 +192,24 @@
             </h2>
             <div id="analysesMenu" class="accordion-collapse collapse {% if request.endpoint in ['clients','orders','delivery'] %}show{% endif %}">
               <div class="accordion-body ps-3">
-                {% if current_user.role == 'admin' %}
+                {% if current_user.role in ['superadmin', 'admin'] %}
                 <a href="{{ url_for('clients') }}" 
                    class="submenu-link {% if request.endpoint == 'clients' %}active{% endif %}">Clients</a>
                 {% endif %}
                 <a href="{{ url_for('orders') }}" 
                    class="submenu-link {% if request.endpoint == 'orders' %}active{% endif %}">
-                   {% if current_user.role == 'admin' %}Commandes{% else %}Mes commandes{% endif %}
+                   {% if current_user.role in ['superadmin', 'admin'] %}Commandes{% else %}Mes commandes{% endif %}
                 </a>
                 <a href="{{ url_for('delivery') }}" 
                    class="submenu-link {% if request.endpoint == 'delivery' %}active{% endif %}">
-                   {% if current_user.role == 'admin' %}Livraisons{% else %}Mes livraisons{% endif %}
+                   {% if current_user.role in ['superadmin', 'admin'] %}Livraisons{% else %}Mes livraisons{% endif %}
                 </a>
               </div>
             </div>
           </div>
 
           <!-- Atelier -->
-           {% if current_user.role == 'admin' %}
+           {% if current_user.role in ['superadmin', 'admin'] %}
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button {% if request.endpoint in ['impression','decoupe','pliage'] %}active{% else %}collapsed{% endif %}"
@@ -224,7 +230,7 @@
           </div>
           {% endif %}
 
-          {% if current_user.role == 'admin' %}
+          {% if current_user.role in ['superadmin', 'admin'] %}
           <!-- Administration -->
           <div class="accordion-item">
             <h2 class="accordion-header">
@@ -237,8 +243,6 @@
               <div class="accordion-body ps-3">
                 <a href="{{ url_for('list_users') }}" 
                    class="submenu-link {% if request.endpoint == 'list_users' %}active{% endif %}">Gestion des comptes</a>
-                <a href="{{ url_for('create_user') }}" 
-                   class="submenu-link {% if request.endpoint == 'create_user' %}active{% endif %}">Créer un compte</a>
               </div>
             </div>
           </div>
