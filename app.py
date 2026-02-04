@@ -247,6 +247,13 @@ def index():
     current_month = f"{now.month:02d}"
     current_year = str(now.year)
 
+    month_names = [
+    "Janvier","Février","Mars","Avril","Mai","Juin",
+    "Juillet","Août","Septembre","Octobre","Novembre","Décembre"
+    ]
+
+    month_label = month_names[now.month - 1]
+
     # Vue admin → totaux globaux
     if current_user.role in ("superadmin", "admin"):
         total_clients = conn.execute("SELECT COUNT(*) FROM client").fetchone()[0]
@@ -402,7 +409,10 @@ def index():
         rows_clients = conn.execute("""
             SELECT produit, COUNT(*) as total
             FROM orders
-            WHERE client = ? AND produit IS NOT NULL
+            WHERE client = ? 
+                AND produit IS NOT NULL
+                AND strftime('%m', date_reservation) = ?
+                AND strftime('%Y', date_reservation) = ?
             GROUP BY produit
             ORDER BY total DESC
             LIMIT 6
@@ -437,7 +447,9 @@ def index():
         products_labels=products_labels,
         products_counts=products_counts,
         days_labels=days_labels,
-        days_counts=days_counts
+        days_counts=days_counts,
+        month_label=month_label,
+        current_year=current_year
     )
 
 # ---- Dashboard (graphs) ----
