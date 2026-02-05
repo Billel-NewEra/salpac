@@ -655,7 +655,6 @@ def orders():
     )
 
 @app.route("/api/cmdcl-search")
-@login_required
 def cmdcl_search():
     term = request.args.get("term", "").strip()
 
