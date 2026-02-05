@@ -215,7 +215,7 @@ $("#cmdcl_filter").select2({
     }
   },
   ajax: {
-    url: "/api/cmdcl-search",
+    url: "salpac/api/cmdcl-search",
     dataType: "json",
     delay: 250,
 
@@ -226,9 +226,7 @@ $("#cmdcl_filter").select2({
     },
 
     processResults: function(data){
-      return {
-        results: data.results
-      };
+      return data;
     },
 
     cache: true

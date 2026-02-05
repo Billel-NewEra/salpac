@@ -655,6 +655,7 @@ def orders():
     )
 
 @app.route("/api/cmdcl-search")
+@login_required
 def cmdcl_search():
     term = request.args.get("term", "").strip()
 
@@ -673,7 +674,7 @@ def cmdcl_search():
 
     results = [{"id": r["cmdl"], "text": r["cmdl"]} for r in rows]
 
-    return jsonify({"results": results})
+    return {"results": results}
 
 # ---- Orders by client ----
 @app.route("/clients/<int:client_id>/orders")
