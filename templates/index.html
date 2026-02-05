@@ -304,7 +304,28 @@ document.addEventListener('DOMContentLoaded', function () {
   const counts = {{ monthly_counts|tojson }};
 
   const options = {
-    chart: { type: 'line', height: 280, toolbar: { show: false }, background: 'transparent' },
+    chart: { 
+  type: 'line',
+  height: 280,
+  background: 'transparent',
+
+  // 🚫 désactive toute interaction
+  zoom: { enabled: false },
+  pan: { enabled: false },
+  selection: { enabled: false },
+
+  toolbar: {
+    show: false,
+    tools: {
+      zoom: false,
+      zoomin: false,
+      zoomout: false,
+      pan: false,
+      reset: false,
+      selection: false
+    }
+  }
+},
     responsive: [{
   breakpoint: 768,
   options: {
@@ -319,6 +340,7 @@ document.addEventListener('DOMContentLoaded', function () {
     series: [{ name: 'Commandes', data: counts }],
     xaxis: {
       categories: months,
+      tickAmount: 12,
       labels: { style: { colors: '#aeb5cc' } }
     },
     yaxis: { labels: { style: { colors: '#aeb5cc' } } },
@@ -326,10 +348,9 @@ document.addEventListener('DOMContentLoaded', function () {
     markers: { size: 4, colors: ['#fff'], strokeColors: '#49BEFF', strokeWidth: 2 },
     grid: { borderColor: 'rgba(255,255,255,0.05)' },
     fill: {
-      type: 'gradient',
-      gradient: { shadeIntensity: 0.6, opacityFrom: 0.4, opacityTo: 0.1, stops: [0, 90, 100] }
+      type: 'solid',
+      opacity: 0.1
     },
-    
   };
 
   new ApexCharts(document.querySelector("#chartOrdersEvolution"), options).render();
