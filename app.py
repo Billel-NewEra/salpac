@@ -466,7 +466,7 @@ def index():
                 AND strftime('%Y', date_reservation) = ?
             GROUP BY client
             ORDER BY total DESC
-            LIMIT 6
+            LIMIT 10
         """, (current_month, current_year)).fetchall()
     else:
         # Si client, on montre ses produits ou rien
@@ -479,7 +479,7 @@ def index():
                 AND strftime('%Y', date_reservation) = ?
             GROUP BY produit
             ORDER BY total DESC
-            LIMIT 6
+            LIMIT 10
         """, (client_name,)).fetchall()
 
     clients_labels = [r['client'] if 'client' in r.keys() else r['produit'] for r in rows_clients]
