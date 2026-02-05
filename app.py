@@ -674,7 +674,7 @@ def cmdcl_search():
 
     results = [{"id": r["cmdl"], "text": r["cmdl"]} for r in rows]
 
-    return {"results": results}
+    return jsonify({"results": results})
 
 # ---- Orders by client ----
 @app.route("/clients/<int:client_id>/orders")
