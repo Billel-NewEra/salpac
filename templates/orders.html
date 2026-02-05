@@ -226,7 +226,9 @@ $("#cmdcl_filter").select2({
     },
 
     processResults: function(data){
-      return data;
+      return {
+        results: data.results
+      };
     },
 
     cache: true
