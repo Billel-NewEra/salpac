@@ -35,14 +35,13 @@
       <input type="date" id="end" name="end" value="{{ end }}" class="form-control">
     </div>
 
-    <!-- Filtre utilisateur -->
+    <!-- Filtre commande -->
     <div class="col-md">
-      <label for="user_filter" class="form-label fw-semibold">👤 Utilisateur</label>
-      <select id="user_filter" name="user" class="form-select">
-        <option value=""></option>
-        {% for u in users %}
-          <option value="{{ u }}" {% if user==u %}selected{% endif %}>{{ u }}</option>
-        {% endfor %}
+      <label class="form-label fw-semibold">🔢 Commande</label>
+      <select id="commande_filter" name="commande" class="form-select">
+        {% if commande %}
+          <option value="{{ commande }}" selected>{{ commande }}</option>
+        {% endif %}
       </select>
     </div>
 
@@ -53,6 +52,17 @@
         <option value=""></option>
         {% for a in articles %}
           <option value="{{ a }}" {% if article==a %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Filtre utilisateur -->
+    <div class="col-md">
+      <label for="user_filter" class="form-label fw-semibold">👤 Utilisateur</label>
+      <select id="user_filter" name="user" class="form-select">
+        <option value=""></option>
+        {% for u in users %}
+          <option value="{{ u }}" {% if user==u %}selected{% endif %}>{{ u }}</option>
         {% endfor %}
       </select>
     </div>
@@ -200,6 +210,37 @@ document.addEventListener("DOMContentLoaded", function () {
     width: "100%",
     minimumResultsForSearch: 0
   });
+
+  // --- Select2 Commande AJAX ---
+$("#commande_filter").select2({
+  placeholder:"Toutes",
+  allowClear:true,
+  width:"100%",
+  minimumInputLength:1,
+  language: {
+    inputTooShort: function () {
+      return "";
+    }
+  },
+  ajax:{
+    url:"api/commandes-search",
+    dataType:"json",
+    delay:250,
+    data:function(params){
+      return {
+        term:params.term,
+        table:"impressions"
+      };
+    },
+    processResults:function(data){
+      return data;
+    },
+    cache:true
+  }
+}).on("change select2:clear", function(){
+  document.querySelector('input[name="page"]').value = 1;
+  this.form.submit();
+});
 
   $(document).on("select2:open", function () {
     const el = document.querySelector(".select2-container--open .select2-search__field");

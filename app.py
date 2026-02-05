@@ -1191,6 +1191,7 @@ def impression():
     # ---- filtres ----
     period = request.args.get("period", "all")
     article = (request.args.get("article") or "").strip()
+    commande = (request.args.get("commande") or "").strip()
     user = (request.args.get("user") or "").strip()
     start = request.args.get("start") or ""
     end = request.args.get("end") or ""
@@ -1244,6 +1245,11 @@ def impression():
             "date(date_impression) BETWEEN date(?) AND date(?)"
         )
         params.extend([start_date, end_date])
+
+    # commande
+    if commande:
+        where_clauses.append("num_commande = ?")
+        params.append(commande)
 
     # article
     if article:
@@ -1349,7 +1355,46 @@ def impression():
         total_etuis=total_etuis,
         users=users,
         articles=articles,
+        commande=commande
     )
+
+@app.route("/api/commandes-search")
+@login_required
+def commandes_search():
+    term = request.args.get("term","").strip()
+    table = request.args.get("table","").strip()
+
+    # 🔒 whitelist sécurité
+    allowed_tables = {
+        "impressions":"num_commande",
+        "decoupage":"num_commande",
+        "pliage":"num_commande"
+    }
+
+    if table not in allowed_tables:
+        return jsonify({"results":[]})
+    
+    column = allowed_tables[table]
+
+    conn = get_db_connection()
+
+    query = f"""
+        SELECT DISTINCT {column}
+        FROM {table}
+        WHERE {column} LIKE ?
+        ORDER BY {column} DESC
+        LIMIT 20
+    """
+
+    rows = conn.execute(query,(f"%{term}%",)).fetchall()
+    conn.close()
+
+    return jsonify({
+        "results":[
+            {"id":r[column],"text":r[column]}
+            for r in rows if r[column] is not None
+        ]
+    })
 
 
 @app.route("/decoupe")
@@ -1363,6 +1408,7 @@ def decoupe():
     period = request.args.get("period", "all")
     user = (request.args.get("user") or "").strip()
     article = (request.args.get("article") or "").strip()
+    commande = (request.args.get("commande") or "").strip()
     start = request.args.get("start") or ""
     end = request.args.get("end") or ""
 
@@ -1413,6 +1459,11 @@ def decoupe():
             "date(date_decoupage) BETWEEN date(?) AND date(?)"
         )
         params.extend([start_date, end_date])
+
+    # commande
+    if commande:
+        where_clauses.append("num_commande = ?")
+        params.append(commande)
 
     # article (description)
     if article:
@@ -1514,7 +1565,8 @@ def decoupe():
         total=total,
         total_feuilles=total_feuilles,
         users=users,
-        articles=articles
+        articles=articles,
+        commande=commande
     )
 
 @app.route("/pliage")
@@ -1530,6 +1582,7 @@ def pliage():
     period = request.args.get("period", "all")
     user = (request.args.get("user") or "").strip()
     article = (request.args.get("article") or "").strip()
+    commande = (request.args.get("commande") or "").strip()
     start = request.args.get("start") or ""
     end = request.args.get("end") or ""
 
@@ -1583,6 +1636,11 @@ def pliage():
         )
         params.extend([start_date, end_date])
 
+    # commande
+    if commande:
+        where_clauses.append("num_commande = ?")
+        params.append(commande)
+    
     # User
     if user:
         pattern = "%" + "%".join(user.split()) + "%"
@@ -1676,7 +1734,8 @@ def pliage():
         total=total,
         total_qte=total_qte,
         users=users,
-        articles=articles
+        articles=articles,
+        commande=commande
     )
 
 
