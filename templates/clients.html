@@ -4,6 +4,25 @@
 
 <h4 class="mb-3">Liste des Clients</h4>
 
+<!-- Filtres -->
+<form method="get" action="{{ url_for('clients') }}" class="mb-3">
+  <input type="hidden" name="page" value="{{ page }}">
+
+  <div class="row g-2 align-items-end">
+
+    <div class="col-md-4">
+      <label class="form-label fw-semibold">🏢 Entreprise</label>
+      <select id="company_filter" name="company" class="form-select">
+        <option value=""></option>
+        {% for c in companies %}
+          <option value="{{ c }}" {% if company==c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+  </div>
+</form>
+
 <div class="card widget">
   <div class="card-body p-2">
     <div class="table-responsive">
@@ -55,5 +74,35 @@
     {% include 'pagination.html'%}
   </div>
 </div>
+
+<!-- SCRIPTS -->
+ <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function(){
+
+  function submitFilters(){
+    $('input[name="page"]').val(1);
+    $('form').submit();
+  }
+
+  $("#company_filter").select2({
+    placeholder:"Toutes",
+    allowClear:true,
+    width:"100%"
+  }).on("change select2:clear", submitFilters);
+
+  // Auto-focus champ recherche
+  $(document).on('select2:open', () => {
+    setTimeout(() => {
+      const field = document.querySelector('.select2-container--open .select2-search__field');
+      if (field) field.focus();
+    }, 0);
+  });
+
+});
+</script>
 
 {% endblock %}

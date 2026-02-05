@@ -471,51 +471,22 @@ def clients():
     page = request.args.get("page", 1, type=int)
     per_page = 9
 
-    company = (request.args.get("company") or "").strip()
-
-    query = """
-        SELECT 
-            N AS id, 
-            Entreprise AS company_name, 
-            Contact AS contact_name, 
-            Tel AS phone, 
-            Email AS email
+    clients_list = conn.execute(
+        """
+        SELECT N AS id, Entreprise AS company_name, Contact AS contact_name, 
+               Tel AS phone, Email AS email
         FROM client
-        WHERE 1=1
-    """
+        ORDER BY N ASC
+        LIMIT ? OFFSET ?
+        """,
+        (per_page, (page - 1) * per_page),
+    ).fetchall()
 
-    count_query = "SELECT COUNT(*) FROM client WHERE 1=1"
-
-    params = []
-    count_params = []
-
-    # 🔎 filtre entreprise
-    if company:
-        pattern = "%" + "%".join(company.split()) + "%"
-        query += " AND Entreprise LIKE ? COLLATE NOCASE"
-        count_query += " AND Entreprise LIKE ? COLLATE NOCASE"
-        params.append(pattern)
-        count_params.append(pattern)
-
-    query += " ORDER BY N ASC LIMIT ? OFFSET ?"
-    params.extend([per_page, (page - 1) * per_page])
-
-    clients_list = conn.execute(query, params).fetchall()
-
-    total_clients = conn.execute(count_query, count_params).fetchone()[0]
-
+    total_clients = conn.execute("SELECT COUNT(*) FROM client").fetchone()[0]
     total_pages = (total_clients + per_page - 1) // per_page
 
     start = (page - 1) * per_page + 1 if total_clients > 0 else 0
     end = min(page * per_page, total_clients)
-
-    # Liste pour Select2
-    companies = [
-        r["Entreprise"] for r in conn.execute(
-            "SELECT DISTINCT Entreprise FROM client ORDER BY Entreprise"
-        ).fetchall()
-        if r["Entreprise"]
-    ]
 
     conn.close()
 
@@ -526,11 +497,8 @@ def clients():
         total_pages=total_pages,
         start=start,
         end=end,
-        total_clients=total_clients,
-        companies=companies,
-        company=company
+        total_clients=total_clients
     )
-
 
 # ---- Orders (pagination + filtres) ----
 @app.route("/orders")
