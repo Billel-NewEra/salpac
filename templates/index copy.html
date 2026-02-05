@@ -182,42 +182,15 @@
       </div>
     </div>
 
-    <!-- Impressions par commande ( top 10 ) pour le mois courant -->
     <div class="col-12 col-md-6 col-lg-6">
       <div class="chart-card">
         <div class="chart-title">
-          Impressions par commande ( Top 10 )
+          Impressions par commande ( top 10 )
           <span class="text-secondary small">
             — {{ month_label }} {{ current_year }}
           </span>
         </div>
         <div id="chartImpressionsCmd"></div>
-      </div>
-    </div>
-
-    <!-- Découpe — Top 10 commandes pour le mois courant -->
-    <div class="col-12 col-md-6 col-lg-6">
-      <div class="chart-card">
-        <div class="chart-title">
-          Découpe par commande ( Top 10 )
-          <span class="text-secondary small">
-            — {{ month_label }} {{ current_year }}
-          </span>
-        </div>
-        <div id="chartDecoupe"></div>
-      </div>
-    </div>
-
-    <!-- Pliage par commande ( Top 10 ) pour le mois courant -->
-    <div class="col-12 col-md-6 col-lg-6">
-      <div class="chart-card">
-        <div class="chart-title">
-          Pliage par commandes ( Top 10 )
-          <span class="text-secondary small">
-            — {{ month_label }} {{ current_year }}
-          </span>
-        </div>
-        <div id="chartPliage"></div>
       </div>
     </div>
 
@@ -542,9 +515,14 @@ document.addEventListener('DOMContentLoaded', function () {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-  const labels = {{ imp_cmd_labels|tojson }};
-  const feuilles = {{ imp_feuilles|tojson }};
-  const etuis = {{ imp_etuis|tojson }};
+  imp_cmd_labels = [4, 0, 3, 5, 1, 2, 6, 8, 11, 14];
+  imp_feuilles = [4000, 990, 980, 100, 5000, 890, 970, 200, 880, 570];
+  imp_etuis = [32000, 7920, 7840, 1200, 32020, 7925, 7844, 1250, 4521, 32541];
+  
+  
+  const labels = ["sdf", "dsfds", "asdf", "fds", "gfdh", "nbv", "cvbg", "tyrtyr", "yhyh", "ghfhgfh"];
+  const feuilles = [4000, 990, 980, 100, 5000, 890, 970, 200, 880, 570];
+  const etuis = [32000, 7920, 7840, 1200, 32020, 7925, 7844, 1250, 4521, 32541];
 
   const options = {
     chart: {
@@ -588,186 +566,19 @@ document.addEventListener('DOMContentLoaded', function () {
     },
 
     tooltip: {
-      theme: 'dark',
-      shared: true,
-      intersect: false,
-      y: {
-        formatter: function(val) {
-          return val.toLocaleString();
-        }
-      }
+  theme: 'dark',
+  shared: true,
+  intersect: false,
+  y: {
+    formatter: function(val) {
+      return val.toLocaleString();
     }
+  }
+}
   };
 
   new ApexCharts(
     document.querySelector("#chartImpressionsCmd"),
-    options
-  ).render();
-
-});
-</script>
-
-<!-- Nombre de découpes par commande (top 10) -->
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-
-  const labels = {{ decoupe_cmd_labels|tojson }};
-  const data = {{ decoupe_feuilles|tojson }};
-
-  const options = {
-    chart: {
-      type: 'bar',
-      height: 300,
-      toolbar: { show: false },
-      background: 'transparent'
-    },
-
-    series: [{
-      name: "Feuilles découpées",
-      data: data
-    }],
-
-    xaxis: {
-  categories: labels,
-  labels: {
-    style: { colors: '#cbd5f5' } // gris clair premium
-  }
-},
-
-yaxis: {
-  labels: {
-    style: { colors: '#cbd5f5' }
-  }
-},
-
-    colors: ['#F97316'],
-
-    plotOptions: {
-      bar: {
-        borderRadius: 6,
-        horizontal: true,
-        barHeight: '60%'
-      }
-    },
-
-    // ✅ ICI ON ACTIVE
-    dataLabels: { 
-      enabled: true,
-      formatter: val => val.toLocaleString(),
-      offsetX: 8,
-      style: {
-        fontSize: '12px',
-        fontWeight: 600,
-        colors: ["#e6eef8"]
-      }
-    },
-
-    grid: {
-      borderColor: 'rgba(255,255,255,0.05)'
-    },
-    fill: {
-  type: 'gradient',
-  gradient: {
-    shade: 'dark',
-    type: "vertical",
-    shadeIntensity: 0.5,
-    gradientToColors: ['#FDBA74'], // pour découpes
-    opacityFrom: 1,
-    opacityTo: 0.7,
-  }
-},
-
-    legend: {
-      labels: { colors: '#aeb5cc' }
-    },
-
-    tooltip: {
-      theme: 'dark',
-      shared: true,
-    intersect: false,
-      y: {
-        formatter: val => val.toLocaleString() + " feuilles"
-      }
-    }
-  };
-
-  new ApexCharts(
-    document.querySelector("#chartDecoupe"),
-    options
-  ).render();
-
-});
-</script>
-
-<!-- Pliage par commande ( Top 10 ) pour le mois courant -->
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-
-  const labels = {{ pliage_cmd_labels|tojson }};
-  const data = {{ pliage_qte|tojson }};
-
-  const options = {
-  chart: {
-    type: 'bar',
-    height: 300,
-    toolbar: { show: false },
-    background: 'transparent'
-  },
-
-  series: [{
-    name: "Étuis pliés",
-    data: data
-  }],
-
-  xaxis: {
-  categories: labels,
-  labels: { 
-    style: { colors: '#cbd5f5' }
-  }
-},
-
-yaxis: {
-  labels: { 
-    style: { colors: '#cbd5f5' }
-  }
-},
-
-  colors: ['#A855F7'], // violet premium
-
-  plotOptions: {
-    bar: {
-      borderRadius: 6,
-      columnWidth: '55%',
-      dataLabels: {
-        position: 'top' // force au-dessus de la barre
-      }
-    }
-  },
-
-  // ⭐ ICI
-  dataLabels: {
-    enabled: true,
-    formatter: val => val.toLocaleString(),
-    style: {
-      fontSize: '12px',
-      fontWeight: 600,
-      colors: ["#e6eef8"]
-    }
-  },
-
-  grid: {
-    borderColor: 'rgba(255,255,255,0.05)'
-  },
-
-  tooltip: {
-    theme: 'dark',
-    shared: true,
-    intersect: false,
-  }
-};
-
-  new ApexCharts(
-    document.querySelector("#chartPliage"),
     options
   ).render();
 

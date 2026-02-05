@@ -278,7 +278,7 @@ def index():
                 AND strftime('%Y', date_livraison) = ?
             GROUP BY produit
             ORDER BY nb_livraisons DESC
-            LIMIT 6
+            LIMIT 10
         """, (current_month, current_year)).fetchall()
 
         products_labels = [row["produit"] for row in top_products]
@@ -302,6 +302,60 @@ def index():
                 AND date_reservation >= date('now','-6 days')
             GROUP BY jour
         """).fetchall()
+
+        # 📊 IMPRESSIONS — feuilles & étuis par commande (mois courant)
+        rows_imp = conn.execute("""
+            SELECT 
+                num_commande,
+                COALESCE(SUM(feuilles),0) AS total_feuilles,
+                COALESCE(SUM(etuis),0) AS total_etuis
+            FROM impressions
+            WHERE strftime('%m', date_impression) = ?
+              AND strftime('%Y', date_impression) = ?
+              AND num_commande IS NOT NULL
+            GROUP BY num_commande
+            ORDER BY (SUM(feuilles)+SUM(etuis)) DESC
+            LIMIT 10
+        """, (current_month, current_year)).fetchall()
+
+        imp_cmd_labels = [r["num_commande"] for r in rows_imp]
+        imp_feuilles = [r["total_feuilles"] for r in rows_imp]
+        imp_etuis = [r["total_etuis"] for r in rows_imp]
+
+
+        # ✂️ Top découpes par commande (mois courant)
+        top_decoupe = conn.execute("""
+            SELECT 
+                num_commande,
+                SUM(feuilles) AS total_feuilles
+            FROM decoupage
+            WHERE num_commande IS NOT NULL
+                AND strftime('%m', date_decoupage) = ?
+                AND strftime('%Y', date_decoupage) = ?
+            GROUP BY num_commande
+            ORDER BY total_feuilles DESC
+            LIMIT 10
+        """, (current_month, current_year)).fetchall()
+
+        decoupe_cmd_labels = [r["num_commande"] for r in top_decoupe]
+        decoupe_feuilles = [r["total_feuilles"] for r in top_decoupe]
+
+        # 📦 Pliage — Top commandes (mois courant)
+        top_pliage = conn.execute("""
+            SELECT 
+                num_commande,
+                SUM(qte_pli) AS total_qte
+            FROM pliage
+            WHERE num_commande IS NOT NULL
+                AND strftime('%m', date_pliage) = ?
+                AND strftime('%Y', date_pliage) = ?
+            GROUP BY num_commande
+            ORDER BY total_qte DESC
+            LIMIT 10
+        """, (current_month, current_year)).fetchall()
+
+        pliage_cmd_labels = [r["num_commande"] for r in top_pliage]
+        pliage_qte = [r["total_qte"] for r in top_pliage]
     else:
         # Vue client → totaux spécifiques à son entreprise
         client = conn.execute("SELECT Entreprise FROM client WHERE N = ?", (current_user.client_id,)).fetchone()
@@ -367,6 +421,13 @@ def index():
             products_labels = []
             products_counts = []
             orders_raw = []
+            imp_cmd_labels = []
+            imp_feuilles = []
+            imp_etuis = []
+            decoupe_cmd_labels = []
+            decoupe_feuilles = []
+            pliage_cmd_labels = []
+            pliage_qte = []
 
     # ✅ 1️⃣ Nouveau bloc : nombre de commandes par mois
     if current_user.role in ("superadmin", "admin"):
@@ -453,7 +514,14 @@ def index():
         days_labels=days_labels,
         days_counts=days_counts,
         month_label=month_label,
-        current_year=current_year
+        current_year=current_year,
+        imp_cmd_labels=imp_cmd_labels,
+        imp_feuilles=imp_feuilles,
+        imp_etuis=imp_etuis,
+        decoupe_cmd_labels=decoupe_cmd_labels,
+        decoupe_feuilles=decoupe_feuilles,
+        pliage_cmd_labels=pliage_cmd_labels,
+        pliage_qte=pliage_qte,
     )
 
 # ---- Dashboard (graphs) ----
