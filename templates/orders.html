@@ -211,6 +211,9 @@ $("#cmdcl_filter").select2({
   language: {
     inputTooShort: function () {
       return "";
+    },
+    noResults: function () {
+      return "Aucun résultat";
     }
   },
   ajax: {
