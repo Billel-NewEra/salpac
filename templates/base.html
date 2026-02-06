@@ -191,7 +191,7 @@
                 <i class="bi bi-graph-up me-2"></i> Analyses
               </button>
             </h2>
-            <div id="analysesMenu" class="accordion-collapse collapse {% if request.endpoint in ['clients','orders','delivery'] %}show{% endif %}">
+            <div id="analysesMenu" data-bs-parent="#menuAccordion" class="accordion-collapse collapse {% if request.endpoint in ['clients','orders','delivery'] %}show{% endif %}">
               <div class="accordion-body ps-3">
                 {% if current_user.role in ['superadmin', 'admin'] %}
                 <a href="{{ url_for('clients') }}" 
@@ -218,7 +218,7 @@
                 <i class="bi bi-hammer me-2"></i> Atelier
               </button>
             </h2>
-            <div id="atelierMenu" class="accordion-collapse collapse {% if request.endpoint in ['impression','decoupe','pliage'] %}show{% endif %}">
+            <div id="atelierMenu" data-bs-parent="#menuAccordion" class="accordion-collapse collapse {% if request.endpoint in ['impression','decoupe','pliage'] %}show{% endif %}">
               <div class="accordion-body ps-3">
                 <a href="{{ url_for('impression') }}" 
                    class="submenu-link {% if request.endpoint == 'impression' %}active{% endif %}">Impression</a>
@@ -240,7 +240,7 @@
                 <i class="bi bi-shield-lock me-2"></i> Administration
               </button>
             </h2>
-            <div id="adminMenu" class="accordion-collapse collapse {% if request.endpoint in ['list_users','create_user'] %}show{% endif %}">
+            <div id="adminMenu" data-bs-parent="#menuAccordion" class="accordion-collapse collapse {% if request.endpoint in ['list_users','create_user'] %}show{% endif %}">
               <div class="accordion-body ps-3">
                 <a href="{{ url_for('list_users') }}" 
                    class="submenu-link {% if request.endpoint == 'list_users' %}active{% endif %}">Gestion des comptes</a>
