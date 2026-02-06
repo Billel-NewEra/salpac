@@ -36,7 +36,7 @@
 
     <!-- Filtre commande -->
     <div class="col-md">
-      <label class="form-label fw-semibold">🔢 Commande</label>
+      <label class="form-label fw-semibold">🔢 CmdCL</label>
       <select id="commande_filter" name="commande" class="form-select">
         {% if commande %}
           <option value="{{ commande }}" selected>{{ commande }}</option>
@@ -79,7 +79,8 @@
           <tr>
             <th class="d-none d-md-table-cell">Tirage</th>
             <th>Date</th>
-            <th>Commande</th>
+            <th class="d-none d-md-table-cell">Commande</th>
+            <th>CMDCL</th>
             <th class="d-none d-md-table-cell">Machine</th>
             <th>Article</th>
             <th class="text-end d-none d-md-table-cell">Feuilles</th>
@@ -102,8 +103,13 @@
       </td>
 
       <!-- Commande -->
-      <td>
+      <td class="d-none d-md-table-cell">
         {{ i.num_commande }}
+      </td>
+
+      <!-- Commande Client -->
+      <td>
+        {{ i.cmdcl }}
       </td>
 
       <!-- Machine -->
@@ -239,7 +245,6 @@ $("#commande_filter").select2({
     data:function(params){
       return {
         term:params.term,
-        table:"impressions"
       };
     },
     processResults:function(data){

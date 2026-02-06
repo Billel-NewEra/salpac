@@ -36,7 +36,7 @@
 
     <!-- Filtre commande -->
     <div class="col-md">
-      <label class="form-label fw-semibold">🔢 Commande</label>
+      <label class="form-label fw-semibold">🔢 CmdCL</label>
       <select id="commande_filter" name="commande" class="form-select">
         {% if commande %}
           <option value="{{ commande }}" selected>{{ commande }}</option>
@@ -78,7 +78,8 @@
             <th class="d-none d-md-table-cell">N° Pliage</th>
             <th class="d-none d-md-table-cell">N° Découpage</th>
             <th>Date</th>
-            <th>N° Commande</th>
+            <th class="d-none d-md-table-cell">N° Commande</th>
+            <th>CMDCL</th>
             <th class="d-none d-md-table-cell">Maquette</th>
             <th>Article</th>
             <th class="text-end d-none d-md-table-cell">Étuis</th>
@@ -105,8 +106,13 @@
             </td>
           
             <!-- N° Commande -->
-            <td>
+            <td class="d-none d-md-table-cell">
               {{ p.num_commande }}
+            </td>
+
+            <!-- CMDCL -->
+            <td>
+              {{ p.cmdcl }}
             </td>
           
             <!-- Maquette -->

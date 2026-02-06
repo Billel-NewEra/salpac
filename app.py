@@ -736,8 +736,8 @@ def orders():
         count_params.append(status)
 
     if cmdcl:
-        query += " AND cmdl = ?"
-        count_query += " AND cmdl = ?"
+        query += " AND TRIM(cmdl) = TRIM(?)"
+        count_query += " AND TRIM(cmdl) = TRIM(?)"
         params.append(cmdcl)
         count_params.append(cmdcl)
 
@@ -1368,7 +1368,7 @@ def impression():
 
     # commande
     if commande:
-        where_clauses.append("num_commande = ?")
+        where_clauses.append("TRIM(o.cmdl) = TRIM(?)")
         params.append(commande)
 
     # article
@@ -1392,19 +1392,22 @@ def impression():
     # =========================
     data_query = f"""
         SELECT 
-            num_impression,
-            date_impression,
-            hr,
-            num_commande,
-            machine,
-            article,
-            feuilles,
-            etuis,
-            user,
-            datetime(date(date_impression) || ' ' || IFNULL(hr,'00:00')) AS datetime_full
-        FROM impressions
+            i.num_impression,
+            i.date_impression,
+            i.hr,
+            i.num_commande,
+            o.cmdl AS cmdcl,
+            i.machine,
+            i.article,
+            i.feuilles,
+            i.etuis,
+            i.user,
+            datetime(date(i.date_impression) || ' ' || IFNULL(i.hr,'00:00')) AS datetime_full
+        FROM impressions i
+        INNER JOIN orders o 
+            ON i.num_commande = o.num_reservation
         {where_sql}
-        ORDER BY date_impression DESC
+        ORDER BY i.date_impression DESC
         LIMIT ? OFFSET ?
     """
 
@@ -1417,8 +1420,10 @@ def impression():
     # 🔢 COUNT QUERY
     # =========================
     count_query = f"""
-        SELECT COUNT(*) 
-        FROM impressions
+        SELECT COUNT(*)
+        FROM impressions i
+        INNER JOIN orders o
+            ON i.num_commande = o.num_reservation
         {where_sql}
     """
 
@@ -1429,9 +1434,11 @@ def impression():
     # =========================
     totals_query = f"""
         SELECT 
-            COALESCE(SUM(feuilles),0),
-            COALESCE(SUM(etuis),0)
-        FROM impressions
+            COALESCE(SUM(i.feuilles),0),
+            COALESCE(SUM(i.etuis),0)
+        FROM impressions i
+        INNER JOIN orders o
+            ON i.num_commande = o.num_reservation
         {where_sql}
     """
 
@@ -1481,38 +1488,30 @@ def impression():
 @app.route("/api/commandes-search")
 @login_required
 def commandes_search():
+
     term = request.args.get("term","").strip()
-    table = request.args.get("table","").strip()
-
-    # 🔒 whitelist sécurité
-    allowed_tables = {
-        "impressions":"num_commande",
-        "decoupage":"num_commande",
-        "pliage":"num_commande"
-    }
-
-    if table not in allowed_tables:
-        return jsonify({"results":[]})
-    
-    column = allowed_tables[table]
 
     conn = get_db_connection()
 
-    query = f"""
-        SELECT DISTINCT {column}
-        FROM {table}
-        WHERE {column} LIKE ?
-        ORDER BY {column} DESC
+    rows = conn.execute("""
+        SELECT DISTINCT o.cmdl
+        FROM orders o
+        WHERE o.cmdl LIKE ?
+          AND EXISTS (
+            SELECT 1
+            FROM impressions i
+            WHERE i.num_commande = o.num_reservation
+          )
+        ORDER BY o.cmdl DESC
         LIMIT 20
-    """
+    """, (f"%{term}%",)).fetchall()
 
-    rows = conn.execute(query,(f"%{term}%",)).fetchall()
     conn.close()
 
     return jsonify({
         "results":[
-            {"id":r[column],"text":r[column]}
-            for r in rows if r[column] is not None
+            {"id":r["cmdl"],"text":r["cmdl"]}
+            for r in rows if r["cmdl"]
         ]
     })
 
@@ -1582,7 +1581,7 @@ def decoupe():
 
     # commande
     if commande:
-        where_clauses.append("num_commande = ?")
+        where_clauses.append("TRIM(o.cmdl) = TRIM(?)")
         params.append(commande)
 
     # article (description)
@@ -1606,19 +1605,22 @@ def decoupe():
     # =========================
     data_query = f"""
         SELECT 
-            num_decoupage,
-            num_impression,
-            date_decoupage,
-            hr,
-            num_commande,
-            maquette_id,
-            description,
-            feuilles,
-            user,
-            datetime(date(date_decoupage) || ' ' || IFNULL(hr,'00:00')) AS datetime_full
-        FROM decoupage
+            d.num_decoupage,
+            d.num_impression,
+            d.date_decoupage,
+            d.hr,
+            d.num_commande,
+            o.cmdl AS cmdcl,
+            d.maquette_id,
+            d.description,
+            d.feuilles,
+            d.user,
+            datetime(date(d.date_decoupage) || ' ' || IFNULL(d.hr,'00:00')) AS datetime_full
+        FROM decoupage d
+        INNER JOIN orders o
+            ON d.num_commande = o.num_reservation
         {where_sql}
-        ORDER BY num_decoupage DESC
+        ORDER BY d.num_decoupage DESC
         LIMIT ? OFFSET ?
     """
 
@@ -1632,7 +1634,9 @@ def decoupe():
     # =========================
     count_query = f"""
         SELECT COUNT(*)
-        FROM decoupage
+        FROM decoupage d
+        INNER JOIN orders o
+            ON d.num_commande = o.num_reservation
         {where_sql}
     """
 
@@ -1643,7 +1647,9 @@ def decoupe():
     # =========================
     totals_query = f"""
         SELECT COALESCE(SUM(feuilles),0)
-        FROM decoupage
+        FROM decoupage d
+        INNER JOIN orders o
+            ON d.num_commande = o.num_reservation
         {where_sql}
     """
 
@@ -1758,7 +1764,7 @@ def pliage():
 
     # commande
     if commande:
-        where_clauses.append("num_commande = ?")
+        where_clauses.append("TRIM(o.cmdl) = TRIM(?)")
         params.append(commande)
     
     # User
@@ -1781,11 +1787,15 @@ def pliage():
     # 📦 DATA QUERY
     # =========================
     data_query = f"""
-        SELECT *,
-            datetime(date(date_pliage) || ' ' || IFNULL(hr,'00:00')) AS datetime_full
-        FROM pliage
+        SELECT 
+            p.*,
+            o.cmdl AS cmdcl,
+            datetime(date(p.date_pliage) || ' ' || IFNULL(p.hr,'00:00')) AS datetime_full
+        FROM pliage p
+        INNER JOIN orders o
+            ON p.num_commande = o.num_reservation
         {where_sql}
-        ORDER BY date_pliage DESC
+        ORDER BY p.date_pliage DESC
         LIMIT ? OFFSET ?
     """
 
@@ -1799,7 +1809,9 @@ def pliage():
     # =========================
     count_query = f"""
         SELECT COUNT(*)
-        FROM pliage
+        FROM pliage p
+        INNER JOIN orders o
+            ON p.num_commande = o.num_reservation
         {where_sql}
     """
 
@@ -1810,7 +1822,9 @@ def pliage():
     # =========================
     totals_query = f"""
         SELECT COALESCE(SUM(qte_pli),0)
-        FROM pliage
+        FROM pliage p
+        INNER JOIN orders o
+            ON p.num_commande = o.num_reservation
         {where_sql}
     """
 
