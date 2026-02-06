@@ -242,8 +242,17 @@ def home():
 @login_required
 def index():
     conn = get_db_connection()
-    now = datetime.now()
-    #now = datetime(2026, 1, 30)
+    #now = datetime.now()
+    now = datetime(2026, 1, 15)    
+    month_start = now.replace(day=1).strftime("%Y-%m-%d")
+
+    if now.month == 12:
+        next_month = now.replace(year=now.year+1, month=1, day=1)
+    else:
+        next_month = now.replace(month=now.month+1, day=1)
+    
+    month_end = next_month.strftime("%Y-%m-%d")
+
     current_month = f"{now.month:02d}"
     current_year = str(now.year)
 
@@ -264,27 +273,36 @@ def index():
         orders_bag = conn.execute("SELECT COUNT(*) FROM orders WHERE situation = 'BAG' COLLATE NOCASE").fetchone()[0]
         total_delivery = conn.execute("SELECT COUNT(*) FROM delivery").fetchone()[0]
 
+        # ✅ NOUVEAU CLIENTS DU MOIS
+        new_clients = conn.execute("""
+            SELECT COUNT(*) FROM client
+            WHERE date(date_creation) >= date(?)
+              AND date(date_creation) < date(?)
+        """, (month_start, month_end)).fetchone()[0]
+        
         # ✳️ Livraisons du mois en cours
         new_deliveries = conn.execute("""
-            SELECT COUNT(*) FROM delivery
-            WHERE strftime('%m', date_livraison) = ? AND strftime('%Y', date_livraison) = ?
-        """, (current_month, current_year)).fetchone()[0]
+        SELECT COUNT(*) FROM delivery
+        WHERE date(date_livraison) >= date(?)
+          AND date(date_livraison) < date(?)
+        """, (month_start, month_end)).fetchone()[0]
 
         # 📦 Produits les plus livrés (Top 6)
         top_products = conn.execute("""
             SELECT produit, COUNT(*) AS nb_livraisons
             FROM delivery
-            WHERE strftime('%m', date_livraison) = ?
-                AND strftime('%Y', date_livraison) = ?
+            WHERE date(date_livraison) >= date(?)
+                AND date(date_livraison) <  date(?)
             GROUP BY produit
             ORDER BY nb_livraisons DESC
             LIMIT 10
-        """, (current_month, current_year)).fetchall()
+        """, (month_start, month_end)).fetchall()
 
         products_labels = [row["produit"] for row in top_products]
         products_counts = [row["nb_livraisons"] for row in top_products]
         
         # 📊 Activité par jour de la semaine (commandes par jour)
+        seven_days_ago = (now - timedelta(days=6)).strftime("%Y-%m-%d")
         orders_raw = conn.execute("""
             SELECT 
                 CASE strftime('%w', date_reservation)
@@ -299,9 +317,9 @@ def index():
                 COUNT(*) AS total
             FROM orders
             WHERE situation IS NOT NULL
-                AND date_reservation >= date('now','-6 days')
+                AND date_reservation >= ?
             GROUP BY jour
-        """).fetchall()
+        """, (seven_days_ago,)).fetchall()
 
         # 📊 IMPRESSIONS — feuilles & étuis par commande (mois courant)
         rows_imp = conn.execute("""
@@ -372,25 +390,28 @@ def index():
             # ✳️ Livraisons du mois pour ce client uniquement
             new_deliveries = conn.execute("""
                 SELECT COUNT(*) FROM delivery
-                WHERE client = ? AND strftime('%m', date_livraison) = ? AND strftime('%Y', date_livraison) = ?
-            """, (client_name, current_month, current_year)).fetchone()[0]
+                WHERE client = ?
+                  AND date(date_livraison) >= date(?)
+                  AND date(date_livraison) < date(?)
+                """, (client_name, month_start, month_end)).fetchone()[0]
 
             # 📦 Produits les plus livrés (pour ce client uniquement)
             top_products = conn.execute("""
                 SELECT produit, COUNT(*) AS nb_livraisons
                 FROM delivery
                 WHERE client = ?
-                    AND strftime('%m', date_livraison) = ?
-                    AND strftime('%Y', date_livraison) = ?
+                    AND date(date_livraison) >= date(?)
+                    AND date(date_livraison) <  date(?)
                 GROUP BY produit
                 ORDER BY nb_livraisons DESC
                 LIMIT 6
-            """, (client_name, current_month, current_year)).fetchall()
+            """, (client_name, month_start, month_end)).fetchall()
 
             products_labels = [row["produit"] for row in top_products]
             products_counts = [row["nb_livraisons"] for row in top_products]
 
             # 📊 Activité par jour de la semaine (commandes par jour)
+            seven_days_ago = (now - timedelta(days=6)).strftime("%Y-%m-%d")
             orders_raw = conn.execute("""
                 SELECT 
                     CASE strftime('%w', date_reservation)
@@ -406,11 +427,12 @@ def index():
                 FROM orders
                 WHERE client = ? 
                     AND situation IS NOT NULL
-                    AND date_reservation >= date('now','-6 days')
+                    AND date_reservation >= ?
                 GROUP BY jour
-            """, (client_name,)).fetchall()
+            """, (client_name,seven_days_ago)).fetchall()
         else:
             total_clients = 0
+            new_clients = 0
             total_orders = 0
             orders_livree = 0
             orders_encours = 0
@@ -435,19 +457,19 @@ def index():
             SELECT strftime('%m', date_reservation) AS mois, COUNT(*) AS total
             FROM orders
             WHERE date_reservation IS NOT NULL
-                AND strftime('%Y', date_reservation) = strftime('%Y','now')
+                AND strftime('%Y', date_reservation) = ?
             GROUP BY mois
             ORDER BY mois
-        """).fetchall()
+        """, (current_year,)).fetchall()
     else:
         rows = conn.execute("""
             SELECT strftime('%m', date_reservation) AS mois, COUNT(*) AS total
             FROM orders
             WHERE client = ? AND date_reservation IS NOT NULL
-                AND strftime('%Y', date_reservation) = strftime('%Y','now')
+                AND strftime('%Y', date_reservation) = ?
             GROUP BY mois
             ORDER BY mois
-        """, (client_name,)).fetchall()
+        """, (client_name, current_year)).fetchall()
 
     # ✅ 2️⃣ Convertir en tableau 12 mois
     months_labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
@@ -480,23 +502,52 @@ def index():
             GROUP BY produit
             ORDER BY total DESC
             LIMIT 10
-        """, (client_name,)).fetchall()
+        """, (client_name, current_month, current_year)).fetchall()
 
     clients_labels = [r['client'] if 'client' in r.keys() else r['produit'] for r in rows_clients]
     clients_counts = [r['total'] for r in rows_clients]
     # --- Fallback automatique pour garantir les 7 jours ---
-    orders_dict = {row["jour"]: row["total"] for row in orders_raw}
-    jours_fixes = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
-    days_labels = jours_fixes
-    days_counts = [orders_dict.get(jour, 0) for jour in jours_fixes]
+    days_labels = []
+    days_dates = []
+    days_counts = []
 
-    
+    working_days = []
+
+    d = now
+
+    # on récupère 7 jours ouvrés
+    while len(working_days) < 7:
+        # weekday(): Lun=0 ... Dim=6
+        if d.weekday() not in (4,5):  # 4=Vendredi, 5=Samedi
+            working_days.append(d)
+        d -= timedelta(days=1)
+
+    # on inverse pour affichage chronologique
+    working_days.reverse()
+
+    jour_map = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"]
+
+    for d in working_days:
+        jour_txt = jour_map[d.weekday()]
+        date_sql = d.strftime("%Y-%m-%d")
+        date_display = d.strftime("%d-%m-%Y")
+
+        count = conn.execute("""
+            SELECT COUNT(*) FROM orders
+            WHERE date(date_reservation) = date(?)
+              AND situation IS NOT NULL
+        """, (date_sql,)).fetchone()[0]
+
+        days_labels.append(jour_txt)
+        days_dates.append(f"{jour_txt} {date_display}")
+        days_counts.append(count)
 
     conn.close()
 
     return render_template(
         "index.html",
         total_clients=total_clients,
+        new_clients=new_clients,
         total_orders=total_orders,
         total_delivery=total_delivery,
         orders_livree=orders_livree,
@@ -513,6 +564,7 @@ def index():
         products_counts=products_counts,
         days_labels=days_labels,
         days_counts=days_counts,
+        days_dates=days_dates,
         month_label=month_label,
         current_year=current_year,
         imp_cmd_labels=imp_cmd_labels,

@@ -47,12 +47,13 @@ def sync(access_path, sqlite_path):
             Entreprise TEXT,
             Contact TEXT,
             Tel TEXT,
-            Email TEXT
+            Email TEXT,
+            date_creation TEXT
         )
     """)
-    rows = cur_acc.execute("SELECT NUM_CLIENT, ENTREPRISE, CONTACT, TELEPHONE, EMAIL FROM client")
+    rows = cur_acc.execute("SELECT NUM_CLIENT, ENTREPRISE, CONTACT, TELEPHONE, EMAIL, DATE_ENTREE FROM client")
     for row in rows:
-        cur_sql.execute("INSERT INTO client VALUES (?, ?, ?, ?, ?)", row)
+        cur_sql.execute("INSERT INTO client VALUES (?, ?, ?, ?, ?, ?)", row)
 
     # ==============================
     # TABLE matérialisée "orders"

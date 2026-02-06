@@ -389,14 +389,22 @@ document.addEventListener('DOMContentLoaded', function () {
     },
     plotOptions: { 
       bar: { 
-        borderRadius: 6, 
+        borderRadius: 8, 
         distributed: true, 
-        columnWidth: '55%',
-        endingShape: 'rounded'
+        columnWidth: '55%'
       } 
     },
     colors: ['#49BEFF', '#22C55E', '#E9B949', '#49BEFF', '#22C55E', '#E9B949'],
-    dataLabels: { enabled: false },
+    dataLabels: { 
+      enabled: true,
+      formatter: val => val,
+      offsetY: -6,
+      style: {
+        fontSize: '12px',
+        fontWeight: 600,
+        colors: ["#e6eef8"]
+      }
+    },
     grid: { borderColor: 'rgba(255,255,255,0.05)' },
     legend: {
       show: true,
@@ -408,7 +416,15 @@ document.addEventListener('DOMContentLoaded', function () {
     shape: 'circle',   // ✅ rend les pastilles rondes SVG
   },
       itemMargin: { horizontal: 10, vertical: 6 }
-    }
+    },
+    tooltip: {
+      theme: 'dark',
+      shared: true,
+      intersect: false,
+      y: {
+        formatter: val => val + " commandes"
+      }
+    },
   };
 
   new ApexCharts(document.querySelector("#chartOrdersByClient"), options).render();
@@ -467,7 +483,15 @@ document.addEventListener('DOMContentLoaded', function () {
   '#0EA5E9'  // bleu clair
 ],
     grid: { borderColor: 'rgba(255,255,255,0.05)' },
-    dataLabels: { enabled: false },
+    dataLabels: { 
+      enabled: true,
+      formatter: val => val.toLocaleString(),
+      style: {
+        fontSize: '12px',
+        fontWeight: 600,
+        colors: ["#e6eef8"]
+      } 
+    },
     legend: {
       show: true,
       position: 'bottom',
@@ -478,7 +502,15 @@ document.addEventListener('DOMContentLoaded', function () {
     shape: 'circle',   // ✅ rend les pastilles rondes SVG
   },
       itemMargin: { horizontal: 10, vertical: 6 }
-    }
+    },
+    tooltip: {
+      theme: 'dark',
+      shared: true,
+      intersect: false,
+      y: {
+        formatter: val => val + " livraisons"
+      }
+    },
   };
 
   new ApexCharts(document.querySelector("#chartTopProducts"), options).render();
@@ -490,7 +522,9 @@ document.addEventListener('DOMContentLoaded', function () {
 <!-- Activités par jour de la semaine -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
   const days = {{ days_labels|tojson }};
+  const fullDates = {{ days_dates|tojson }};
   const counts = {{ days_counts|tojson }};
 
   const options = {
@@ -498,45 +532,32 @@ document.addEventListener('DOMContentLoaded', function () {
       type: 'bar',
       height: 300,
       toolbar: { show: false },
-      background: 'transparent',
-      animations: {
-        enabled: true,
-        speed: 900,
-        animateGradually: { enabled: true, delay: 120 }
-      }
+      background: 'transparent'
     },
-    responsive: [{
-  breakpoint: 768,
-  options: {
-    chart: {
-      height: 220
-    },
-    legend: {
-      position: 'bottom'
-    }
-  }
-}],
+
     series: [{
       name: 'Commandes',
       data: counts
     }],
+
     xaxis: {
       categories: days,
       labels: {
         style: { colors: '#aeb5cc', fontSize: '13px' }
-      },
-      axisTicks: { show: false },
-      axisBorder: { show: false }
+      }
     },
-    yaxis: {
-      labels: { style: { colors: '#aeb5cc', fontSize: '12px' } },
-      min: 0,
-      forceNiceScale: true
+    legend: {
+  show: false
+},
+    dataLabels: {
+      enabled: true,
+      style: {
+        fontSize: '12px',
+        fontWeight: 600,
+        colors: ["#e6eef8"]
+      }
     },
-    grid: {
-      borderColor: 'rgba(255,255,255,0.05)',
-      strokeDashArray: 3
-    },
+
     plotOptions: {
       bar: {
         columnWidth: '45%',
@@ -544,18 +565,31 @@ document.addEventListener('DOMContentLoaded', function () {
         distributed: true
       }
     },
-    dataLabels: { enabled: false },
-    colors: ['#c084fc', '#f472b6', '#38bdf8', '#facc15', '#34d399', '#f97316', '#60a5fa'],
-    legend: { show: false },
+
+    colors: ['#c084fc','#f472b6','#38bdf8','#facc15','#34d399','#f97316','#60a5fa'],
+    grid: {
+      show: false
+    },
     tooltip: {
       theme: 'dark',
+      shared: true,
+      intersect: false,
+      x: {
+        formatter: function(val, { dataPointIndex }) {
+          return fullDates[dataPointIndex];
+        }
+      },
       y: {
-        formatter: (val) => `${val} commande${val > 1 ? 's' : ''}`
+        formatter: val =>
+          `${val} commande${val > 1 ? 's' : ''}`
       }
     }
   };
 
-  new ApexCharts(document.querySelector("#chartWeekActivity"), options).render();
+  new ApexCharts(
+    document.querySelector("#chartWeekActivity"),
+    options
+  ).render();
 });
 </script>
 
@@ -753,7 +787,7 @@ yaxis: {
   }
 },
 
-  colors: ['#A855F7'], // violet premium
+  colors: ['#ac892d'], // violet premium
 
   plotOptions: {
     bar: {
