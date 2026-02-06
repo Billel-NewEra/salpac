@@ -242,8 +242,8 @@ def home():
 @login_required
 def index():
     conn = get_db_connection()
-    #now = datetime.now()
-    now = datetime(2026, 1, 15)    
+    now = datetime.now()
+    #now = datetime(2026, 1, 15)    
     month_start = now.replace(day=1).strftime("%Y-%m-%d")
 
     if now.month == 12:
