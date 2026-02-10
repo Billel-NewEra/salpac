@@ -335,7 +335,7 @@ let currentVersion=0;
 
 /* Vérifie version */
 async function checkVersion(){
-    const r=await fetch("/api/planning/version");
+    const r=await fetch("api/planning/version");
     const d=await r.json();
 
     if(d.version!=currentVersion){
@@ -346,7 +346,7 @@ async function checkVersion(){
 
 /* Charge planning */
 async function loadPlanning(){
-    const r=await fetch("/api/planning/data");
+    const r=await fetch("api/planning/data");
     const d=await r.json();
 
     const container=document.querySelector(".planning-list");
