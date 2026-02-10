@@ -2079,7 +2079,7 @@ def planning():
         conn_app.close()
         conn_local.close()
 
-@app.route("/planning/save", methods=["POST"])
+@app.route("/api/planning/save", methods=["POST"])
 @login_required
 def planning_save():
 

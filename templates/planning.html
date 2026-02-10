@@ -720,7 +720,7 @@ function saveOrder(){
             order.push(el.dataset.id);
         });
 
-        fetch("/planning/save",{
+        fetch("api/planning/save",{
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body:JSON.stringify({order})
