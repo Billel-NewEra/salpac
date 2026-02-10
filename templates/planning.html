@@ -848,7 +848,7 @@ function generatePlanning(){
 
     const doGenerate = ()=>{
 
-        fetch("/admin/planning/create",{method:"POST"})
+        fetch("admin/planning/create",{method:"POST"})
         .then(r=>r.json())
         .then(data=>{
             if(data.success){
