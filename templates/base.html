@@ -6,9 +6,9 @@
     <title>{% block title %}SALPAC{% endblock %}</title>
 
     <!-- Fonts + Bootstrap + Icons -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
@@ -240,10 +240,14 @@
                 <i class="bi bi-shield-lock me-2"></i> Administration
               </button>
             </h2>
-            <div id="adminMenu" data-bs-parent="#menuAccordion" class="accordion-collapse collapse {% if request.endpoint in ['list_users','create_user'] %}show{% endif %}">
+            <div id="adminMenu" data-bs-parent="#menuAccordion" class="accordion-collapse collapse {% if request.endpoint in ['list_users','planning'] %}show{% endif %}">
               <div class="accordion-body ps-3">
                 <a href="{{ url_for('list_users') }}" 
-                   class="submenu-link {% if request.endpoint == 'list_users' %}active{% endif %}">Gestion des comptes</a>
+                   class="submenu-link {% if request.endpoint == 'list_users' %}active{% endif %}">Gestion des comptes
+                </a>
+                <a href="{{ url_for('planning') }}" 
+                  class="submenu-link {% if request.endpoint == 'planning' %}active{% endif %}">Planning
+                </a>
               </div>
             </div>
           </div>

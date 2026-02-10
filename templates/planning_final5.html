@@ -1,0 +1,846 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+/* =========================
+   BASE
+========================= */
+
+.planning-item{
+    cursor:grab;
+    border-radius:8px !important;
+    font-size:0.95rem;
+    white-space:nowrap; /* Desktop */
+    background:#1f2937;
+    color:#e5e7eb;
+    border:1px solid rgba(255,255,255,0.05);
+    touch-action:manipulation;
+}
+
+.planning-item:hover{
+    background:#243041;
+}
+
+.planning-item:active{
+    cursor:grabbing;
+}
+
+.sortable-chosen{opacity:.4;}
+
+.sortable-ghost{
+    background:rgba(255,255,255,0.05)!important;
+    border:1px dashed rgba(255,255,255,0.25);
+}
+
+.remove-btn{
+    cursor:pointer;
+    margin-left:auto;
+    color:#9ca3af;
+    opacity:0.35;
+    border-radius:6px;
+    padding:2px;
+    transition:0.15s;
+}
+
+/* croix visible quand on survole la ligne */
+.planning-item:hover .remove-btn{
+    opacity:0.7;
+}
+
+/* survol direct de la croix */
+.remove-btn:hover{
+    opacity:1;
+    background:rgba(248,113,113,0.15);
+    color:#f87171;
+}
+
+.select2-results__option{
+    padding:8px 12px;
+}
+
+
+/* =========================
+   LAYOUT COMMANDES
+========================= */
+
+.planning-main,
+.planning-meta{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+}
+
+.planning-main{
+    font-weight:500;
+}
+
+.planning-meta{
+    margin-top:4px;
+    font-size:0.85rem;
+}
+
+
+/* =========================
+   MOBILE OPTIMISÉ
+========================= */
+
+@media (max-width:576px){
+
+    .planning-item{
+        white-space:normal;
+        align-items:flex-start;
+        padding:10px 12px;
+        line-height:1.2;
+    }
+
+    /* texte plus compact */
+    .planning-main{font-size:0.9rem;}
+    .planning-meta{
+        font-size:0.85rem;
+        font-weight:600;
+    }
+
+    
+
+    /* cacher quantité */
+    .planning-meta .badge.bg-primary{
+        display:none;
+    }
+
+    /* cacher statut en mobile */
+    .planning-meta .badge:not(.bg-warning):not(.bg-primary){
+        display:none;
+    }
+
+    /* grip plus gros au doigt */
+    .bi-grip-vertical{
+        font-size:1.4rem;
+        padding:6px;
+    }
+
+    .remove-btn{
+        display:none;
+        /* margin-top:4px; */
+        /* font-size:1.2rem; */
+    }
+    
+}
+
+/*     */
+/* =========================
+   BOUTONS ACTIONS PLANNING
+========================= */
+
+.btn-planning{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+
+  font-size:0.85rem;
+  padding:6px 14px;
+
+  border-radius:999px;
+  text-decoration:none;
+  font-weight:500;
+  transition:all .18s ease;
+
+  border:1px solid transparent;
+  backdrop-filter: blur(6px);
+}
+
+/* Nouveau (bleu doux) */
+.btn-new{
+  background:rgba(93,135,255,0.12);
+  color:#8FB1FF;
+  border-color:rgba(93,135,255,0.35);
+}
+
+.btn-new:hover{
+  background:rgba(93,135,255,0.22);
+  color:#fff;
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(93,135,255,.25);
+}
+
+/* Générer (orange/amber) */
+.btn-generate{
+  background:rgba(255,193,7,0.12);
+  color:#FFD666;
+  border-color:rgba(255,193,7,0.35);
+}
+
+.btn-generate:hover{
+  background:rgba(255,193,7,0.22);
+  color:#fff;
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(255,193,7,.25);
+}
+
+/* Sauvegarder (vert doux) */
+.btn-save{
+  background:rgba(25,135,84,0.12);
+  color:#6EE7B7;
+  border-color:rgba(25,135,84,0.35);
+}
+
+.btn-save:hover{
+  background:rgba(25,135,84,0.22);
+  color:#fff;
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(25,135,84,.25);
+}
+
+
+/*   POPUP   */
+.swal-compact{
+    padding:14px !important;
+    border-radius:14px !important;
+}
+
+.swal-compact .swal2-title{
+    font-size:18px !important;
+}
+
+.swal-compact .swal2-html-container{
+    font-size:14px !important;
+}
+
+.swal-compact .swal2-actions button{
+    padding:6px 14px !important;
+    font-size:14px !important;
+    border-radius:999px !important;
+}
+
+/* =========================
+   MOBILE ACTION BOUTTONS
+========================= */
+@media (max-width:576px){
+
+  /* header vertical */
+  .planning-header{
+    flex-direction:column;
+    align-items:stretch !important;
+    gap:12px;
+  }
+
+  /* grille boutons */
+  .planning-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    width:100%;
+    position:sticky;
+    bottom:0;
+    
+    padding:10px;
+    border-radius:12px;
+    z-index:10;
+  }
+
+  /* sauvegarder sur 2 colonnes */
+  .planning-actions .btn-save{
+    grid-column:span 2;
+  }
+
+  .btn-planning{
+    justify-content:center;
+    padding:7px 12px;
+    font-size:0.9rem;
+  }
+
+  .btn-planning i{
+    font-size:1rem;
+  }
+}
+
+/*  CSS Select2 mobile  */
+@media (max-width:576px){
+
+  .select2-container{
+    width:100% !important;
+  }
+
+  .select2-selection{
+    height:44px !important;
+    padding:6px 10px !important;
+    border-radius:10px !important;
+  }
+
+  .select2-selection__rendered{
+    line-height:30px !important;
+    font-size:0.95rem;
+  }
+}
+
+/*  POPUPS MOBILE FRIENDLY  */
+@media (max-width:576px){
+
+  .swal-compact{
+    width:92% !important;
+    font-size:14px !important;
+  }
+
+  .swal-compact .swal2-title{
+    font-size:16px !important;
+  }
+
+  .swal-compact .swal2-actions button{
+    padding:10px 14px !important;
+    font-size:14px !important;
+  }
+}
+
+/*   CARDS & LIST SPACING MOBILE    */
+@media (max-width:576px){
+
+  .card-body{
+    padding:12px;
+  }
+
+  .planning-item{
+    margin-bottom:6px;
+  }
+}
+
+.card{
+    background:#222844;
+    border:1px solid #3b5ca8;
+    border-radius:18px;
+
+    box-shadow:
+        0 8px 24px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+
+    overflow:hidden;
+}
+
+.card-body{
+    background:transparent;
+}
+
+.select2-selection{
+    background:#fde68a !important;
+    border:1px solid #f59e0b !important;
+    color:#78350f !important;
+}
+
+/*  ajouter commande  */
+.select2-container--default .select2-selection--single{
+    background:#4d537d !important;
+    border:0.1px solid #4073be !important;
+    color:#78350f !important;
+    height:42px;
+}
+
+.select2-dropdown{
+    background:#281f41 !important;
+}
+
+.select2-container--default 
+.select2-selection--single 
+.select2-selection__rendered{
+    color:#78350f !important;
+    line-height:40px;
+}
+
+.select2-selection__arrow b{
+    border-color:#a27b65 transparent transparent transparent !important;
+}
+
+.select2-meta{
+    font-size:12px;
+    color:#c7d2fe; /* bleu clair doux */
+    opacity:0.95;
+}
+
+.select2-results__option--highlighted{
+    background:rgb(94, 12, 41) !important;
+    color:white !important;
+}
+
+
+/*  style elements lignes personalisés   */
+.cmd-cl{
+    color:#0dcaf0; /* amber */
+}
+
+.cmd-qte{
+    color:#4688f9; /* amber */
+    font-weight:600;
+}
+
+.cmd-reste{
+    color:#fbbf24; /* amber */
+    font-weight:600;
+}
+
+.statut-EN-COURS{color:#ebd785;}
+.statut-LIVRAISON{color:#71bced;}
+.statut-BAG{color:#eb8628;}
+
+
+</style>
+
+<div class="planning-header d-flex justify-content-between align-items-center mb-3">
+<h4>Planning Atelier</h4>
+
+<div class="planning-actions">
+
+<button onclick="newPlanning()" class="btn-planning btn-new">
+  <i class="bi bi-plus-circle"></i>
+  Nouveau
+</button>
+
+<button onclick="generatePlanning()" class="btn-planning btn-generate">
+  <i class="bi bi-lightning-charge"></i>
+  Générer
+</button>
+
+<button onclick="saveOrder()" class="btn-planning btn-save">
+  <i class="bi bi-check2-circle"></i>
+  Sauvegarder
+</button>
+
+</div>
+</div>
+
+<div class="card">
+<div class="card-body">
+
+<p class="text-secondary">Glissez-déposez pour définir la priorité.</p>
+
+<!-- Select2 toujours visible -->
+<div class="mb-3">
+<select id="addOrder" style="width:100%;"></select>
+</div>
+
+<ul id="planningList" class="list-group">
+{% for o in orders %}
+<li class="list-group-item planning-item d-flex align-items-center"
+    data-id="{{ o.num }}">
+
+<i class="bi bi-grip-vertical me-2 text-secondary"></i>
+
+<div class="planning-content flex-grow-1">
+
+  <div class="planning-main">
+    <strong>#{{ o.num }}</strong>
+    <span class="text-info ms-2">{{ o.cmdcl }}</span>
+    <span class="ms-2">{{ o.client }}</span>
+    <span class="me-2 text-secondary">{{ o.produit }}</span>
+  </div>
+
+  <div class="planning-meta">
+    <span class="badge bg-primary me-2">Qte {{ o.qte }}</span>
+    <span class="badge bg-warning text-dark me-2">Reste {{ o.reste }}</span>
+
+    {# statut badge #}
+    {% set s = o.statut|upper %}
+
+    {% if s == "LIVREE" %}
+        <span class="badge me-2 bg-success-subtle text-success">Livrée</span>
+    {% elif s == "LIVRAISON" %}
+        <span class="badge me-2 bg-info-subtle text-info">Livraison</span>
+    {% elif s == "BAG" %}
+        <span class="badge me-2 bg-bag-subtle text-bag">BAG</span>
+    {% elif s == "EN COURS" %}
+        <span class="badge me-2 bg-warning-subtle text-warning">En cours</span>
+    {% else %}
+        <span class="badge me-2 bg-secondary">{{ o.statut }}</span>
+    {% endif %}
+
+  </div>
+
+</div>
+
+<i class="bi bi-x-lg remove-btn ms-2"></i>
+
+</li>
+{% endfor %}
+</ul>
+
+</div>
+</div>
+
+{% endblock %}
+
+
+
+{% block scripts %}
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Select2 -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function(){
+
+const planningList = document.getElementById("planningList");
+
+/* Drag & drop */
+new Sortable(planningList,{
+    animation:150,
+    ghostClass:"sortable-ghost",
+    chosenClass:"sortable-chosen",
+    
+    delay: 150,
+    delayOnTouchOnly: true
+});
+
+let startX = 0;
+
+document.addEventListener("touchstart", e=>{
+    const li = e.target.closest(".planning-item");
+    if(!li) return;
+    startX = e.touches[0].clientX;
+});
+
+document.addEventListener("touchend", e=>{
+    const li = e.target.closest(".planning-item");
+    if(!li) return;
+
+    let endX = e.changedTouches[0].clientX;
+    let diff = endX - startX;
+
+    // swipe droite > 80px
+    if(diff > 80){
+        li.style.transition = "0.2s";
+        li.style.transform = "translateX(100%)";
+        li.style.opacity = "0";
+
+        setTimeout(()=>{
+            li.remove();
+        },200);
+    }
+});
+
+function formatCommande(c){
+
+    if(!c.id) return c.text;
+
+    const statutClass = c.statut
+        .toUpperCase()
+        .replace(/\s+/g, "-");
+
+    return $(`
+        <div>
+            <div>
+                <span class="cmd-id">#${c.id}</span>
+                —
+                <span class="cmd-cl">${c.cmdcl}</span>
+                —
+                <span class="cmd-client">${c.client}</span>
+            </div>
+
+            <div class="select2-meta">
+                <span class="cmd-produit">${c.produit}</span>
+                |
+                <span class="cmd-qte">Qte ${c.qte}</span>
+                |
+                <span class="cmd-reste">Reste ${c.reste}</span>
+                |
+                <span class="cmd-statut statut-${statutClass}">
+                    ${c.statut.toUpperCase()}
+                </span>
+            </div>
+        </div>
+    `);
+}
+
+$("#addOrder").select2({
+    placeholder:"Ajouter commande (10 max)",
+    minimumInputLength:0,
+    escapeMarkup: m => m,
+    ajax:{
+        url:"/api/planning/search",
+        dataType:"json",
+        delay:250,
+        cache:true,   // 🔥 IMPORTANT
+        data: params => ({
+
+    term: params.term || "",
+    page: params.page || 1,
+
+    exclude: Array.from(
+        document.querySelectorAll("#planningList li")
+    ).map(li => li.dataset.id)
+}),
+        processResults: function(data){
+
+    const existingIds = Array.from(
+        document.querySelectorAll("#planningList li")
+    ).map(li => li.dataset.id);
+
+    const filtered = data.results.filter(r =>
+        !existingIds.includes(String(r.id))
+    );
+
+    return {
+        results: filtered,
+        pagination: data.pagination  // 🔥 IMPORTANT
+    };
+}
+    },
+
+    templateResult: formatCommande,
+
+    templateSelection: function(c){
+        if(!c.cmdcl) return c.text;
+        return c.cmdcl;
+    }
+});
+
+
+
+/* AJOUT DANS LISTE (sans reload) */
+$("#addOrder").on("select2:select", function(e){
+
+    const num=e.params.data.id;
+    
+    const MAX = 10;
+    const count = document.querySelectorAll("#planningList li").length;
+
+    if(count >= MAX){
+        Swal.fire({
+            title:"Limite atteinte",
+            customClass:{
+                popup:"swal-compact"
+            },
+            width:window.innerWidth < 576 ? '92%' : 400,
+            text:"Maximum 10 commandes dans le planning.",
+            background:"#1E2746",
+            color:"#E2E8F0",
+            scrollbarPadding:false
+        });
+
+        $("#addOrder").val(null).trigger("change");
+        return;
+    }
+
+    // éviter doublon
+    if(document.querySelector(`[data-id='${num}']`)) return;
+
+    const li=document.createElement("li");
+    li.className="list-group-item planning-item d-flex align-items-center";
+    li.dataset.id=num;
+
+    const d = e.params.data;
+
+    function getStatusBadge(statut){
+
+    statut = (statut || "").toUpperCase();
+
+    if(statut === "LIVREE")
+        return '<span class="badge me-2 bg-success-subtle text-success">Livrée</span>';
+
+    if(statut === "LIVRAISON")
+        return '<span class="badge me-2 bg-info-subtle text-info">Livraison</span>';
+
+    if(statut === "BAG")
+        return '<span class="badge me-2 bg-bag-subtle text-bag">BAG</span>';
+
+    if(statut === "EN COURS")
+        return '<span class="badge me-2 bg-warning-subtle text-warning">En cours</span>';
+
+    return `<span class="badge me-2 bg-secondary">${statut}</span>`;
+    }
+
+li.innerHTML = `
+<i class="bi bi-grip-vertical me-2 text-secondary"></i>
+
+<div class="planning-content flex-grow-1">
+
+  <div class="planning-main">
+    <strong>#${num}</strong>
+    <span class="text-info ms-2">${d.cmdcl}</span>
+    <span class="ms-2">${d.client}</span>
+    <span class="me-2 text-secondary">${d.produit}</span>
+  </div>
+
+  <div class="planning-meta">
+    <span class="badge bg-primary me-2">Qte ${d.qte}</span>
+    <span class="badge bg-warning text-dark me-2">Reste ${d.reste}</span>
+    ${getStatusBadge(d.statut)}
+  </div>
+
+</div>
+
+<i class="bi bi-x-lg remove-btn ms-2"></i>
+`;
+
+    planningList.appendChild(li);
+
+    // 🔥 reset + reopen
+    $("#addOrder").val(null).trigger("change");
+    $("#addOrder").select2("open");
+});
+
+
+/* SUPPRESSION */
+$(document).on("click",".remove-btn",function(){
+    $(this).closest("li").remove();
+});
+
+});
+
+/* SAVE */
+function saveOrder(){
+
+    Swal.fire({
+        title:"Sauvegarder le planning ?",
+        customClass:{
+        popup:"swal-compact"
+        },
+        width:window.innerWidth < 576 ? '92%' : 400,
+        scrollbarPadding:false,
+
+        showCancelButton:true,
+        confirmButtonText:"Oui, sauvegarder",
+        cancelButtonText:"Annuler",
+
+        confirmButtonColor:"#198754",
+        cancelButtonColor:"#6c757d",
+
+        background:"#1E2746",
+        color:"#E2E8F0",
+        backdrop:"rgba(0,0,0,0.6)"
+    })
+    .then((result)=>{
+
+        if(!result.isConfirmed) return;
+
+        const btn = event.target;
+        btn.disabled=true;
+
+        const order=[];
+        document.querySelectorAll("#planningList li").forEach(el=>{
+            order.push(el.dataset.id);
+        });
+
+        fetch("/planning/save",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({order})
+        })
+        .then(()=>{
+            Swal.fire({
+                icon:"success",
+                title:"Sauvegardé",
+                text:"Planning enregistré.",
+                customClass:{
+                    popup:"swal-compact"
+                },
+                width:300,
+                scrollbarPadding:false,
+                timer:1400,
+                showConfirmButton:false,
+                background:"#1E2746",
+                color:"#E2E8F0"
+            });
+        })
+        .finally(()=>btn.disabled=false);
+
+    });
+}
+
+/* NOUVEAU */
+function newPlanning(){
+
+    const hasOrders =
+        document.querySelectorAll("#planningList li").length>0;
+    
+    const clearUI = ()=>{
+        document.getElementById("planningList").innerHTML = "";
+    };
+
+    if(hasOrders){
+        Swal.fire({
+            title:"Nouveau planning ?",
+            text:"Le planning actuel sera vidé.",
+            customClass:{
+                popup:"swal-compact"
+            },
+            width:window.innerWidth < 576 ? '92%' : 400,
+            scrollbarPadding:false,
+            showCancelButton:true,
+            confirmButtonText:"Oui, vider",
+            cancelButtonText:"Annuler",
+
+            confirmButtonColor:"#5d87ff",
+            cancelButtonColor:"#6c757d",
+
+            background:"#1E2746",
+            color:"#E2E8F0",
+            backdrop:"rgba(0,0,0,0.6)"
+        })
+        .then((result)=>{
+            if(result.isConfirmed){
+                clearUI();   // 🔥 juste ça
+            } 
+        });
+    }else{
+        clearUI();   // 🔥 juste ça
+    }
+}
+
+/* GENERATE */
+function generatePlanning(){
+
+    const hasOrders =
+        document.querySelectorAll("#planningList li").length>0;
+
+    if(hasOrders){    
+        Swal.fire({
+            title:"Générer un nouveau planning ?",
+            text:"Le planning actuel sera remplacé.",
+            customClass:{
+                popup:"swal-compact"
+            },
+            width:window.innerWidth < 576 ? '92%' : 400,
+            scrollbarPadding:false,
+            showCancelButton:true,
+            confirmButtonText:"Oui, générer",
+            cancelButtonText:"Annuler",
+
+            confirmButtonColor:"#ffc107",
+            cancelButtonColor:"#6c757d",
+
+            background:"#1E2746",
+            color:"#E2E8F0",
+            backdrop:"rgba(0,0,0,0.6)"
+        })
+        .then((result)=>{
+            if(result.isConfirmed){
+                fetch("/admin/planning/create",{method:"POST"})
+                    .then(()=>location.reload());
+            }
+        });
+    }else{
+        // vide → direct
+        fetch("/admin/planning/create",{method:"POST"})
+            .then(()=>location.reload());
+    }
+}
+
+/* VERSION AUTO REFRESH */
+let currentVersion=0;
+
+fetch("/api/planning/version")
+.then(r=>r.json())
+.then(d=>currentVersion=d.version);
+
+setInterval(()=>{
+fetch("/api/planning/version")
+.then(r=>r.json())
+.then(d=>{
+    if(d.version!=currentVersion) location.reload();
+});
+},30000);
+</script>
+
+{% endblock %}
+
+

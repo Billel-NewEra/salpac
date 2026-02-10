@@ -38,6 +38,12 @@ def get_auth_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+# --- Connexion planning DB ---
+def get_app_connection():
+    conn = sqlite3.connect("instance/app.sqlite")
+    conn.row_factory = sqlite3.Row
+    return conn
+
 # --- User class (Flask-Login) ---
 class User(UserMixin):
     def __init__(self, id, username, password_hash, role, client_id):
@@ -154,6 +160,39 @@ def datetime_format(value):
 
     return value
 
+def init_app_db():
+    conn = get_app_connection()
+    cur = conn.cursor()
+
+    # Table: planning_version (pour versioning propre)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS planning_version (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at TEXT NOT NULL,
+            created_by TEXT
+        )
+    """)
+
+    # Table: planning_items (ordre des commandes pour une version donnée)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS planning_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            version_id INTEGER NOT NULL,
+            num_reservation INTEGER NOT NULL,
+            position INTEGER NOT NULL,
+            status_snapshot TEXT,
+            updated_at TEXT NOT NULL,
+            UNIQUE(version_id, num_reservation),
+            FOREIGN KEY(version_id) REFERENCES planning_version(id)
+        )
+    """)
+
+    # Index pour tri rapide
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_planning_items_version_pos ON planning_items(version_id, position)")
+
+    conn.commit()
+    conn.close()
+
 # ============================
 #   ROUTES AUTHENTIFICATION
 # ============================
@@ -170,6 +209,9 @@ def login():
 
         if user and check_password_hash(user.password_hash, password):
             login_user(user, remember=True)
+            # 👇 redirection selon rôle
+            if user.role == "planning":
+                return jsonify({"success": True, "redirect": url_for("planning_view")})
             return jsonify({"success": True, "redirect": url_for("index")})
         else:
             # ✅ On renvoie du JSON au lieu de recharger la page
@@ -200,14 +242,22 @@ def inject_now():
 @app.context_processor
 def inject_client_name():
     client_name = None
-    if current_user.is_authenticated and current_user.role == "client":
-        conn = get_db_connection()
-        row = conn.execute(
-            "SELECT Entreprise FROM client WHERE N = ?", (current_user.client_id,)
-        ).fetchone()
-        conn.close()
-        if row:
-            client_name = row["Entreprise"]
+
+    try:
+        if current_user.is_authenticated and getattr(current_user, "role", None) == "client":
+            client_id = getattr(current_user, "client_id", None)
+            if client_id:
+                conn = get_db_connection()
+                row = conn.execute(
+                    "SELECT Entreprise FROM client WHERE N = ?", (client_id,)
+                ).fetchone()
+                conn.close()
+                if row:
+                    client_name = row["Entreprise"]
+    except Exception:
+        # on ne casse jamais un rendu de page juste à cause d'un badge
+        client_name = None
+
     return dict(client_name=client_name)
 
 # ============================
@@ -241,9 +291,21 @@ def home():
 @app.route("/index")
 @login_required
 def index():
+    # 🚫 planning ne doit pas voir le dashboard
+    if current_user.role == "planning":
+        return redirect(url_for("planning_view"))
     conn = get_db_connection()
     now = datetime.now()
-    #now = datetime(2026, 1, 30)
+    #now = datetime(2026, 1, 15)    
+    month_start = now.replace(day=1).strftime("%Y-%m-%d")
+
+    if now.month == 12:
+        next_month = now.replace(year=now.year+1, month=1, day=1)
+    else:
+        next_month = now.replace(month=now.month+1, day=1)
+    
+    month_end = next_month.strftime("%Y-%m-%d")
+
     current_month = f"{now.month:02d}"
     current_year = str(now.year)
 
@@ -264,27 +326,36 @@ def index():
         orders_bag = conn.execute("SELECT COUNT(*) FROM orders WHERE situation = 'BAG' COLLATE NOCASE").fetchone()[0]
         total_delivery = conn.execute("SELECT COUNT(*) FROM delivery").fetchone()[0]
 
+        # ✅ NOUVEAU CLIENTS DU MOIS
+        new_clients = conn.execute("""
+            SELECT COUNT(*) FROM client
+            WHERE date(date_creation) >= date(?)
+              AND date(date_creation) < date(?)
+        """, (month_start, month_end)).fetchone()[0]
+        
         # ✳️ Livraisons du mois en cours
         new_deliveries = conn.execute("""
-            SELECT COUNT(*) FROM delivery
-            WHERE strftime('%m', date_livraison) = ? AND strftime('%Y', date_livraison) = ?
-        """, (current_month, current_year)).fetchone()[0]
+        SELECT COUNT(*) FROM delivery
+        WHERE date(date_livraison) >= date(?)
+          AND date(date_livraison) < date(?)
+        """, (month_start, month_end)).fetchone()[0]
 
         # 📦 Produits les plus livrés (Top 6)
         top_products = conn.execute("""
             SELECT produit, COUNT(*) AS nb_livraisons
             FROM delivery
-            WHERE strftime('%m', date_livraison) = ?
-                AND strftime('%Y', date_livraison) = ?
+            WHERE date(date_livraison) >= date(?)
+                AND date(date_livraison) <  date(?)
             GROUP BY produit
             ORDER BY nb_livraisons DESC
-            LIMIT 6
-        """, (current_month, current_year)).fetchall()
+            LIMIT 10
+        """, (month_start, month_end)).fetchall()
 
         products_labels = [row["produit"] for row in top_products]
         products_counts = [row["nb_livraisons"] for row in top_products]
         
         # 📊 Activité par jour de la semaine (commandes par jour)
+        seven_days_ago = (now - timedelta(days=6)).strftime("%Y-%m-%d")
         orders_raw = conn.execute("""
             SELECT 
                 CASE strftime('%w', date_reservation)
@@ -299,9 +370,63 @@ def index():
                 COUNT(*) AS total
             FROM orders
             WHERE situation IS NOT NULL
-                AND date_reservation >= date('now','-6 days')
+                AND date_reservation >= ?
             GROUP BY jour
-        """).fetchall()
+        """, (seven_days_ago,)).fetchall()
+
+        # 📊 IMPRESSIONS — feuilles & étuis par commande (mois courant)
+        rows_imp = conn.execute("""
+            SELECT 
+                num_commande,
+                COALESCE(SUM(feuilles),0) AS total_feuilles,
+                COALESCE(SUM(etuis),0) AS total_etuis
+            FROM impressions
+            WHERE strftime('%m', date_impression) = ?
+              AND strftime('%Y', date_impression) = ?
+              AND num_commande IS NOT NULL
+            GROUP BY num_commande
+            ORDER BY (SUM(feuilles)+SUM(etuis)) DESC
+            LIMIT 10
+        """, (current_month, current_year)).fetchall()
+
+        imp_cmd_labels = [r["num_commande"] for r in rows_imp]
+        imp_feuilles = [r["total_feuilles"] for r in rows_imp]
+        imp_etuis = [r["total_etuis"] for r in rows_imp]
+
+
+        # ✂️ Top découpes par commande (mois courant)
+        top_decoupe = conn.execute("""
+            SELECT 
+                num_commande,
+                SUM(feuilles) AS total_feuilles
+            FROM decoupage
+            WHERE num_commande IS NOT NULL
+                AND strftime('%m', date_decoupage) = ?
+                AND strftime('%Y', date_decoupage) = ?
+            GROUP BY num_commande
+            ORDER BY total_feuilles DESC
+            LIMIT 10
+        """, (current_month, current_year)).fetchall()
+
+        decoupe_cmd_labels = [r["num_commande"] for r in top_decoupe]
+        decoupe_feuilles = [r["total_feuilles"] for r in top_decoupe]
+
+        # 📦 Pliage — Top commandes (mois courant)
+        top_pliage = conn.execute("""
+            SELECT 
+                num_commande,
+                SUM(qte_pli) AS total_qte
+            FROM pliage
+            WHERE num_commande IS NOT NULL
+                AND strftime('%m', date_pliage) = ?
+                AND strftime('%Y', date_pliage) = ?
+            GROUP BY num_commande
+            ORDER BY total_qte DESC
+            LIMIT 10
+        """, (current_month, current_year)).fetchall()
+
+        pliage_cmd_labels = [r["num_commande"] for r in top_pliage]
+        pliage_qte = [r["total_qte"] for r in top_pliage]
     else:
         # Vue client → totaux spécifiques à son entreprise
         client = conn.execute("SELECT Entreprise FROM client WHERE N = ?", (current_user.client_id,)).fetchone()
@@ -318,25 +443,28 @@ def index():
             # ✳️ Livraisons du mois pour ce client uniquement
             new_deliveries = conn.execute("""
                 SELECT COUNT(*) FROM delivery
-                WHERE client = ? AND strftime('%m', date_livraison) = ? AND strftime('%Y', date_livraison) = ?
-            """, (client_name, current_month, current_year)).fetchone()[0]
+                WHERE client = ?
+                  AND date(date_livraison) >= date(?)
+                  AND date(date_livraison) < date(?)
+                """, (client_name, month_start, month_end)).fetchone()[0]
 
             # 📦 Produits les plus livrés (pour ce client uniquement)
             top_products = conn.execute("""
                 SELECT produit, COUNT(*) AS nb_livraisons
                 FROM delivery
                 WHERE client = ?
-                    AND strftime('%m', date_livraison) = ?
-                    AND strftime('%Y', date_livraison) = ?
+                    AND date(date_livraison) >= date(?)
+                    AND date(date_livraison) <  date(?)
                 GROUP BY produit
                 ORDER BY nb_livraisons DESC
                 LIMIT 6
-            """, (client_name, current_month, current_year)).fetchall()
+            """, (client_name, month_start, month_end)).fetchall()
 
             products_labels = [row["produit"] for row in top_products]
             products_counts = [row["nb_livraisons"] for row in top_products]
 
             # 📊 Activité par jour de la semaine (commandes par jour)
+            seven_days_ago = (now - timedelta(days=6)).strftime("%Y-%m-%d")
             orders_raw = conn.execute("""
                 SELECT 
                     CASE strftime('%w', date_reservation)
@@ -352,11 +480,12 @@ def index():
                 FROM orders
                 WHERE client = ? 
                     AND situation IS NOT NULL
-                    AND date_reservation >= date('now','-6 days')
+                    AND date_reservation >= ?
                 GROUP BY jour
-            """, (client_name,)).fetchall()
+            """, (client_name,seven_days_ago)).fetchall()
         else:
             total_clients = 0
+            new_clients = 0
             total_orders = 0
             orders_livree = 0
             orders_encours = 0
@@ -367,6 +496,13 @@ def index():
             products_labels = []
             products_counts = []
             orders_raw = []
+            imp_cmd_labels = []
+            imp_feuilles = []
+            imp_etuis = []
+            decoupe_cmd_labels = []
+            decoupe_feuilles = []
+            pliage_cmd_labels = []
+            pliage_qte = []
 
     # ✅ 1️⃣ Nouveau bloc : nombre de commandes par mois
     if current_user.role in ("superadmin", "admin"):
@@ -374,19 +510,19 @@ def index():
             SELECT strftime('%m', date_reservation) AS mois, COUNT(*) AS total
             FROM orders
             WHERE date_reservation IS NOT NULL
-                AND strftime('%Y', date_reservation) = strftime('%Y','now')
+                AND strftime('%Y', date_reservation) = ?
             GROUP BY mois
             ORDER BY mois
-        """).fetchall()
+        """, (current_year,)).fetchall()
     else:
         rows = conn.execute("""
             SELECT strftime('%m', date_reservation) AS mois, COUNT(*) AS total
             FROM orders
             WHERE client = ? AND date_reservation IS NOT NULL
-                AND strftime('%Y', date_reservation) = strftime('%Y','now')
+                AND strftime('%Y', date_reservation) = ?
             GROUP BY mois
             ORDER BY mois
-        """, (client_name,)).fetchall()
+        """, (client_name, current_year)).fetchall()
 
     # ✅ 2️⃣ Convertir en tableau 12 mois
     months_labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
@@ -405,7 +541,7 @@ def index():
                 AND strftime('%Y', date_reservation) = ?
             GROUP BY client
             ORDER BY total DESC
-            LIMIT 6
+            LIMIT 10
         """, (current_month, current_year)).fetchall()
     else:
         # Si client, on montre ses produits ou rien
@@ -418,24 +554,53 @@ def index():
                 AND strftime('%Y', date_reservation) = ?
             GROUP BY produit
             ORDER BY total DESC
-            LIMIT 6
-        """, (client_name,)).fetchall()
+            LIMIT 10
+        """, (client_name, current_month, current_year)).fetchall()
 
     clients_labels = [r['client'] if 'client' in r.keys() else r['produit'] for r in rows_clients]
     clients_counts = [r['total'] for r in rows_clients]
     # --- Fallback automatique pour garantir les 7 jours ---
-    orders_dict = {row["jour"]: row["total"] for row in orders_raw}
-    jours_fixes = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
-    days_labels = jours_fixes
-    days_counts = [orders_dict.get(jour, 0) for jour in jours_fixes]
+    days_labels = []
+    days_dates = []
+    days_counts = []
 
-    
+    working_days = []
+
+    d = now
+
+    # on récupère 7 jours ouvrés
+    while len(working_days) < 7:
+        # weekday(): Lun=0 ... Dim=6
+        if d.weekday() not in (4,5):  # 4=Vendredi, 5=Samedi
+            working_days.append(d)
+        d -= timedelta(days=1)
+
+    # on inverse pour affichage chronologique
+    working_days.reverse()
+
+    jour_map = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"]
+
+    for d in working_days:
+        jour_txt = jour_map[d.weekday()]
+        date_sql = d.strftime("%Y-%m-%d")
+        date_display = d.strftime("%d-%m-%Y")
+
+        count = conn.execute("""
+            SELECT COUNT(*) FROM orders
+            WHERE date(date_reservation) = date(?)
+              AND situation IS NOT NULL
+        """, (date_sql,)).fetchone()[0]
+
+        days_labels.append(jour_txt)
+        days_dates.append(f"{jour_txt} {date_display}")
+        days_counts.append(count)
 
     conn.close()
 
     return render_template(
         "index.html",
         total_clients=total_clients,
+        new_clients=new_clients,
         total_orders=total_orders,
         total_delivery=total_delivery,
         orders_livree=orders_livree,
@@ -452,8 +617,16 @@ def index():
         products_counts=products_counts,
         days_labels=days_labels,
         days_counts=days_counts,
+        days_dates=days_dates,
         month_label=month_label,
-        current_year=current_year
+        current_year=current_year,
+        imp_cmd_labels=imp_cmd_labels,
+        imp_feuilles=imp_feuilles,
+        imp_etuis=imp_etuis,
+        decoupe_cmd_labels=decoupe_cmd_labels,
+        decoupe_feuilles=decoupe_feuilles,
+        pliage_cmd_labels=pliage_cmd_labels,
+        pliage_qte=pliage_qte,
     )
 
 # ---- Dashboard (graphs) ----
@@ -471,22 +644,51 @@ def clients():
     page = request.args.get("page", 1, type=int)
     per_page = 9
 
-    clients_list = conn.execute(
-        """
-        SELECT N AS id, Entreprise AS company_name, Contact AS contact_name, 
-               Tel AS phone, Email AS email
-        FROM client
-        ORDER BY N ASC
-        LIMIT ? OFFSET ?
-        """,
-        (per_page, (page - 1) * per_page),
-    ).fetchall()
+    company = (request.args.get("company") or "").strip()
 
-    total_clients = conn.execute("SELECT COUNT(*) FROM client").fetchone()[0]
+    query = """
+        SELECT 
+            N AS id, 
+            Entreprise AS company_name, 
+            Contact AS contact_name, 
+            Tel AS phone, 
+            Email AS email
+        FROM client
+        WHERE 1=1
+    """
+
+    count_query = "SELECT COUNT(*) FROM client WHERE 1=1"
+
+    params = []
+    count_params = []
+
+    # 🔎 filtre entreprise
+    if company:
+        pattern = "%" + "%".join(company.split()) + "%"
+        query += " AND Entreprise LIKE ? COLLATE NOCASE"
+        count_query += " AND Entreprise LIKE ? COLLATE NOCASE"
+        params.append(pattern)
+        count_params.append(pattern)
+
+    query += " ORDER BY N ASC LIMIT ? OFFSET ?"
+    params.extend([per_page, (page - 1) * per_page])
+
+    clients_list = conn.execute(query, params).fetchall()
+
+    total_clients = conn.execute(count_query, count_params).fetchone()[0]
+
     total_pages = (total_clients + per_page - 1) // per_page
 
     start = (page - 1) * per_page + 1 if total_clients > 0 else 0
     end = min(page * per_page, total_clients)
+
+    # Liste pour Select2
+    companies = [
+        r["Entreprise"] for r in conn.execute(
+            "SELECT DISTINCT Entreprise FROM client ORDER BY Entreprise"
+        ).fetchall()
+        if r["Entreprise"]
+    ]
 
     conn.close()
 
@@ -497,8 +699,11 @@ def clients():
         total_pages=total_pages,
         start=start,
         end=end,
-        total_clients=total_clients
+        total_clients=total_clients,
+        companies=companies,
+        company=company
     )
+
 
 # ---- Orders (pagination + filtres) ----
 @app.route("/orders")
@@ -584,8 +789,8 @@ def orders():
         count_params.append(status)
 
     if cmdcl:
-        query += " AND cmdl = ?"
-        count_query += " AND cmdl = ?"
+        query += " AND TRIM(cmdl) = TRIM(?)"
+        count_query += " AND TRIM(cmdl) = TRIM(?)"
         params.append(cmdcl)
         count_params.append(cmdcl)
 
@@ -1159,6 +1364,7 @@ def impression():
     # ---- filtres ----
     period = request.args.get("period", "all")
     article = (request.args.get("article") or "").strip()
+    commande = (request.args.get("commande") or "").strip()
     user = (request.args.get("user") or "").strip()
     start = request.args.get("start") or ""
     end = request.args.get("end") or ""
@@ -1213,6 +1419,11 @@ def impression():
         )
         params.extend([start_date, end_date])
 
+    # commande
+    if commande:
+        where_clauses.append("TRIM(o.cmdl) = TRIM(?)")
+        params.append(commande)
+
     # article
     if article:
         pattern = "%" + "%".join(article.split()) + "%"
@@ -1234,19 +1445,22 @@ def impression():
     # =========================
     data_query = f"""
         SELECT 
-            num_impression,
-            date_impression,
-            hr,
-            num_commande,
-            machine,
-            article,
-            feuilles,
-            etuis,
-            user,
-            datetime(date(date_impression) || ' ' || IFNULL(hr,'00:00')) AS datetime_full
-        FROM impressions
+            i.num_impression,
+            i.date_impression,
+            i.hr,
+            i.num_commande,
+            o.cmdl AS cmdcl,
+            i.machine,
+            i.article,
+            i.feuilles,
+            i.etuis,
+            i.user,
+            datetime(date(i.date_impression) || ' ' || IFNULL(i.hr,'00:00')) AS datetime_full
+        FROM impressions i
+        INNER JOIN orders o 
+            ON i.num_commande = o.num_reservation
         {where_sql}
-        ORDER BY date_impression DESC
+        ORDER BY i.date_impression DESC
         LIMIT ? OFFSET ?
     """
 
@@ -1259,8 +1473,10 @@ def impression():
     # 🔢 COUNT QUERY
     # =========================
     count_query = f"""
-        SELECT COUNT(*) 
-        FROM impressions
+        SELECT COUNT(*)
+        FROM impressions i
+        INNER JOIN orders o
+            ON i.num_commande = o.num_reservation
         {where_sql}
     """
 
@@ -1271,9 +1487,11 @@ def impression():
     # =========================
     totals_query = f"""
         SELECT 
-            COALESCE(SUM(feuilles),0),
-            COALESCE(SUM(etuis),0)
-        FROM impressions
+            COALESCE(SUM(i.feuilles),0),
+            COALESCE(SUM(i.etuis),0)
+        FROM impressions i
+        INNER JOIN orders o
+            ON i.num_commande = o.num_reservation
         {where_sql}
     """
 
@@ -1317,7 +1535,52 @@ def impression():
         total_etuis=total_etuis,
         users=users,
         articles=articles,
+        commande=commande
     )
+
+@app.route("/api/commandes-search")
+@login_required
+def commandes_search():
+
+    term = request.args.get("term","").strip()
+    scope = request.args.get("scope","impression")  # par défaut
+
+    conn = get_db_connection()
+
+    # mapping scope -> table
+    scope_tables = {
+        "impression": "impressions",
+        "decoupe": "decoupage",
+        "pliage": "pliage"
+    }
+
+    table = scope_tables.get(scope)
+
+    if not table:
+        return jsonify({"results":[]})
+
+    query = f"""
+        SELECT DISTINCT o.cmdl
+        FROM orders o
+        WHERE o.cmdl LIKE ?
+          AND EXISTS (
+            SELECT 1
+            FROM {table} t
+            WHERE t.num_commande = o.num_reservation
+          )
+        ORDER BY o.cmdl DESC
+        LIMIT 20
+    """
+
+    rows = conn.execute(query,(f"%{term}%",)).fetchall()
+    conn.close()
+
+    return jsonify({
+        "results":[
+            {"id":r["cmdl"],"text":r["cmdl"]}
+            for r in rows if r["cmdl"]
+        ]
+    })
 
 
 @app.route("/decoupe")
@@ -1331,6 +1594,7 @@ def decoupe():
     period = request.args.get("period", "all")
     user = (request.args.get("user") or "").strip()
     article = (request.args.get("article") or "").strip()
+    commande = (request.args.get("commande") or "").strip()
     start = request.args.get("start") or ""
     end = request.args.get("end") or ""
 
@@ -1382,6 +1646,11 @@ def decoupe():
         )
         params.extend([start_date, end_date])
 
+    # commande
+    if commande:
+        where_clauses.append("TRIM(o.cmdl) = TRIM(?)")
+        params.append(commande)
+
     # article (description)
     if article:
         pattern = "%" + "%".join(article.split()) + "%"
@@ -1403,19 +1672,22 @@ def decoupe():
     # =========================
     data_query = f"""
         SELECT 
-            num_decoupage,
-            num_impression,
-            date_decoupage,
-            hr,
-            num_commande,
-            maquette_id,
-            description,
-            feuilles,
-            user,
-            datetime(date(date_decoupage) || ' ' || IFNULL(hr,'00:00')) AS datetime_full
-        FROM decoupage
+            d.num_decoupage,
+            d.num_impression,
+            d.date_decoupage,
+            d.hr,
+            d.num_commande,
+            o.cmdl AS cmdcl,
+            d.maquette_id,
+            d.description,
+            d.feuilles,
+            d.user,
+            datetime(date(d.date_decoupage) || ' ' || IFNULL(d.hr,'00:00')) AS datetime_full
+        FROM decoupage d
+        INNER JOIN orders o
+            ON d.num_commande = o.num_reservation
         {where_sql}
-        ORDER BY num_decoupage DESC
+        ORDER BY d.num_decoupage DESC
         LIMIT ? OFFSET ?
     """
 
@@ -1429,7 +1701,9 @@ def decoupe():
     # =========================
     count_query = f"""
         SELECT COUNT(*)
-        FROM decoupage
+        FROM decoupage d
+        INNER JOIN orders o
+            ON d.num_commande = o.num_reservation
         {where_sql}
     """
 
@@ -1440,7 +1714,9 @@ def decoupe():
     # =========================
     totals_query = f"""
         SELECT COALESCE(SUM(feuilles),0)
-        FROM decoupage
+        FROM decoupage d
+        INNER JOIN orders o
+            ON d.num_commande = o.num_reservation
         {where_sql}
     """
 
@@ -1482,7 +1758,8 @@ def decoupe():
         total=total,
         total_feuilles=total_feuilles,
         users=users,
-        articles=articles
+        articles=articles,
+        commande=commande
     )
 
 @app.route("/pliage")
@@ -1498,6 +1775,7 @@ def pliage():
     period = request.args.get("period", "all")
     user = (request.args.get("user") or "").strip()
     article = (request.args.get("article") or "").strip()
+    commande = (request.args.get("commande") or "").strip()
     start = request.args.get("start") or ""
     end = request.args.get("end") or ""
 
@@ -1551,6 +1829,11 @@ def pliage():
         )
         params.extend([start_date, end_date])
 
+    # commande
+    if commande:
+        where_clauses.append("TRIM(o.cmdl) = TRIM(?)")
+        params.append(commande)
+    
     # User
     if user:
         pattern = "%" + "%".join(user.split()) + "%"
@@ -1571,11 +1854,15 @@ def pliage():
     # 📦 DATA QUERY
     # =========================
     data_query = f"""
-        SELECT *,
-            datetime(date(date_pliage) || ' ' || IFNULL(hr,'00:00')) AS datetime_full
-        FROM pliage
+        SELECT 
+            p.*,
+            o.cmdl AS cmdcl,
+            datetime(date(p.date_pliage) || ' ' || IFNULL(p.hr,'00:00')) AS datetime_full
+        FROM pliage p
+        INNER JOIN orders o
+            ON p.num_commande = o.num_reservation
         {where_sql}
-        ORDER BY date_pliage DESC
+        ORDER BY p.date_pliage DESC
         LIMIT ? OFFSET ?
     """
 
@@ -1589,7 +1876,9 @@ def pliage():
     # =========================
     count_query = f"""
         SELECT COUNT(*)
-        FROM pliage
+        FROM pliage p
+        INNER JOIN orders o
+            ON p.num_commande = o.num_reservation
         {where_sql}
     """
 
@@ -1600,7 +1889,9 @@ def pliage():
     # =========================
     totals_query = f"""
         SELECT COALESCE(SUM(qte_pli),0)
-        FROM pliage
+        FROM pliage p
+        INNER JOIN orders o
+            ON p.num_commande = o.num_reservation
         {where_sql}
     """
 
@@ -1644,10 +1935,533 @@ def pliage():
         total=total,
         total_qte=total_qte,
         users=users,
-        articles=articles
+        articles=articles,
+        commande=commande
     )
 
+######### Planning ##########
 
+@app.route("/admin/planning/test")
+@login_required
+def planning_test():
+    if current_user.role not in ("admin", "superadmin"):
+        return "Forbidden", 403
+
+    conn = get_app_connection()
+    v = conn.execute("SELECT COUNT(*) AS c FROM planning_version").fetchone()["c"]
+    conn.close()
+    return f"✅ app.sqlite OK — planning_version rows = {v}"
+
+
+@app.route("/admin/planning/create", methods=["POST"])
+@login_required
+def planning_create():
+
+    if current_user.role not in ("admin","superadmin"):
+        return "Forbidden", 403
+
+    conn_app = get_app_connection()
+    conn_local = get_db_connection()
+
+    cur_app = conn_app.cursor()
+
+    # 1️⃣ Créer version
+    now = datetime.utcnow().isoformat()
+    cur_app.execute("""
+        INSERT INTO planning_version (created_at, created_by)
+        VALUES (?,?)
+    """, (now, current_user.username))
+
+    version_id = cur_app.lastrowid
+
+    # 2️⃣ Récupérer commandes NON livrées
+    orders = conn_local.execute("""
+        SELECT num_reservation, situation, date_reservation
+        FROM orders
+        WHERE situation != 'LIVREE'
+            AND date_reservation IS NOT NULL
+        ORDER BY date_reservation ASC
+        LIMIT 10
+    """).fetchall()
+
+    # 3️⃣ Insérer ordre initial
+    pos = 1
+    for o in orders:
+        cur_app.execute("""
+            INSERT INTO planning_items
+            (version_id, num_reservation, position, status_snapshot, updated_at)
+            VALUES (?,?,?,?,?)
+        """, (
+            version_id,
+            o["num_reservation"],
+            pos,
+            o["situation"],
+            now
+        ))
+        pos += 1
+
+    conn_app.commit()
+    conn_app.close()
+    conn_local.close()
+
+    return jsonify({"success":True,"version":version_id})
+
+@app.route("/planning")
+@login_required
+def planning():
+
+    conn_app = get_app_connection()
+    conn_local = get_db_connection()
+
+    try:
+        # 1️⃣ Dernière version
+        v = conn_app.execute("""
+            SELECT id
+            FROM planning_version
+            ORDER BY id DESC
+            LIMIT 1
+        """).fetchone()
+
+        if not v:
+            return render_template("planning.html", orders=[])
+
+        version_id = v["id"]
+
+        # 2️⃣ Items planning
+        items = conn_app.execute("""
+            SELECT num_reservation, position
+            FROM planning_items
+            WHERE version_id = ?
+            ORDER BY position ASC
+        """, (version_id,)).fetchall()
+
+        if not items:
+            return render_template("planning.html", orders=[])
+
+        nums = [it["num_reservation"] for it in items]
+
+        # sécurité SQL
+        placeholders = ",".join(["?"] * len(nums))
+
+        # 3️⃣ Récupérer commandes
+        orders_data = conn_local.execute(f"""
+            SELECT 
+                num_reservation,
+                cmdl,
+                client,
+                produit,
+                qte,
+                reste,
+                situation
+            FROM orders
+            WHERE num_reservation IN ({placeholders})
+        """, nums).fetchall()
+
+        # mapping
+        orders_map = {
+            r["num_reservation"]: r
+            for r in orders_data
+        }
+
+        orders = []
+
+        for it in items:
+            o = orders_map.get(it["num_reservation"])
+
+            if not o:
+                continue
+
+            orders.append({
+                "num": it["num_reservation"],
+                "cmdcl": o["cmdl"] or "",
+                "client": o["client"] or "",
+                "produit": o["produit"] or "",
+                "qte": int(o["qte"] or 0),
+                "reste": int(o["reste"] or 0),
+                "statut": (o["situation"] or "").strip(),
+                "pos": it["position"]
+            })
+
+        return render_template("planning.html", orders=orders)
+
+    finally:
+        conn_app.close()
+        conn_local.close()
+
+@app.route("/planning/save", methods=["POST"])
+@login_required
+def planning_save():
+
+    if current_user.role not in ("admin","superadmin"):
+        return "Forbidden", 403
+
+    data = request.get_json()
+    order = data.get("order", [])
+
+    conn = get_app_connection()
+
+    v = conn.execute("""
+        SELECT id FROM planning_version
+        ORDER BY id DESC LIMIT 1
+    """).fetchone()
+
+    version_id = v["id"]
+    now = datetime.utcnow().isoformat()
+
+    # 1️⃣ DELETE commandes supprimées
+    if order:
+        placeholders = ",".join(["?"]*len(order))
+        conn.execute(f"""
+            DELETE FROM planning_items
+            WHERE version_id=?
+            AND num_reservation NOT IN ({placeholders})
+        """, [version_id] + order)
+    else:
+        # Si liste vide → tout supprimer
+        conn.execute("""
+            DELETE FROM planning_items
+            WHERE version_id=?
+        """,(version_id,))
+
+    # 2️⃣ UPSERT positions
+    pos = 1
+
+    for num in order:
+        conn.execute("""
+            INSERT INTO planning_items
+            (version_id,num_reservation,position,updated_at)
+            VALUES (?,?,?,?)
+            ON CONFLICT(version_id,num_reservation)
+            DO UPDATE SET
+                position=excluded.position,
+                updated_at=excluded.updated_at
+        """,(version_id,num,pos,now))
+
+        pos += 1
+
+    # 3️⃣ update version pour refresh auto
+    conn.execute("""
+        UPDATE planning_version
+        SET created_at=?
+        WHERE id=?
+    """,(now,version_id))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success":True})
+
+
+@app.route("/api/planning/version")
+@login_required
+def planning_version_api():
+
+    conn = get_app_connection()
+
+    v = conn.execute("""
+        SELECT MAX(updated_at) as last_update
+        FROM planning_items
+    """).fetchone()
+
+    conn.close()
+
+    return jsonify({
+        "version": v["last_update"] if v and v["last_update"] else "0"
+    })
+
+@app.route("/admin/planning/new", methods=["POST"])
+@login_required
+def planning_new():
+
+    if current_user.role not in ("admin","superadmin"):
+        return "Forbidden", 403
+
+    conn = get_app_connection()
+
+    now = datetime.utcnow().isoformat()
+
+    conn.execute("""
+        INSERT INTO planning_version (created_at, created_by)
+        VALUES (?,?)
+    """,(now,current_user.username))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success":True})
+
+
+@app.route("/planning/add", methods=["POST"])
+@login_required
+def planning_add():
+
+    if current_user.role not in ("admin","superadmin"):
+        return "Forbidden", 403
+
+    data = request.get_json()
+    num = data.get("num")
+
+    if not num:
+        return jsonify({"error":"missing num"}),400
+
+    conn = get_app_connection()
+
+    # dernière version
+    v = conn.execute("""
+        SELECT id
+        FROM planning_version
+        ORDER BY id DESC
+        LIMIT 1
+    """).fetchone()
+
+    if not v:
+        return jsonify({"error":"no version"}),400
+
+    version_id = v["id"]
+
+    # position suivante
+    p = conn.execute("""
+        SELECT COALESCE(MAX(position),0)+1 AS pos
+        FROM planning_items
+        WHERE version_id = ?
+    """,(version_id,)).fetchone()["pos"]
+
+    count = conn.execute("""
+        SELECT COUNT(*) as c
+        FROM planning_items
+        WHERE version_id = ?
+    """,(version_id,)).fetchone()["c"]
+
+    if count >= 10:
+        conn.close()
+        return jsonify({"error":"max reached"}),400
+
+    conn.execute("""
+        INSERT INTO planning_items
+        (version_id,num_reservation,position,updated_at)
+        VALUES (?,?,?,?)
+    """,(version_id,num,p,datetime.utcnow().isoformat()))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success":True})
+
+@app.route("/api/planning/search")
+@login_required
+def planning_search():
+
+    term = request.args.get("term","").strip()
+    page = int(request.args.get("page",1))
+    exclude = request.args.getlist("exclude[]")
+
+    limit = 20
+    offset = (page-1)*limit
+
+    conn = get_db_connection()
+
+    base_query = """
+        FROM orders
+        WHERE situation != 'LIVREE'
+          AND date_reservation IS NOT NULL
+    """
+
+    params = []
+
+    if term:
+        base_query += """
+            AND (
+                cmdl LIKE ?
+                OR client LIKE ?
+                OR num_reservation LIKE ?
+            )
+        """
+        like = f"%{term}%"
+        params += [like,like,like]
+
+    if exclude:
+        placeholders = ",".join(["?"]*len(exclude))
+        base_query += f" AND num_reservation NOT IN ({placeholders})"
+        params += exclude
+
+    rows = conn.execute(f"""
+        SELECT 
+            num_reservation,
+            cmdl,
+            client,
+            produit,
+            qte,
+            reste,
+            situation
+        {base_query}
+        ORDER BY date_reservation ASC
+        LIMIT ? OFFSET ?
+    """, params + [limit,offset]).fetchall()
+
+    total = conn.execute(f"""
+        SELECT COUNT(*) as c
+        {base_query}
+    """, params).fetchone()["c"]
+
+    conn.close()
+
+    return jsonify({
+        "results":[
+            {
+                "id": str(r["num_reservation"]),
+                "cmdcl": r["cmdl"] or "",
+                "client": r["client"] or "",
+                "produit": r["produit"] or "",
+                "qte": int(r["qte"] or 0),
+                "reste": int(r["reste"] or 0),
+                "statut": r["situation"],
+                "text": r["cmdl"] or "",
+            }
+            for r in rows
+        ],
+        "pagination":{
+            "more": (page*limit) < total
+        }
+    })
+
+
+@app.route("/planning/view")
+@login_required
+def planning_view():
+
+    # autoriser admin ou planning
+    if current_user.role not in ("admin","superadmin","planning"):
+        return "Forbidden",403
+
+    conn_app = get_app_connection()
+    conn_local = get_db_connection()
+
+    try:
+        v = conn_app.execute("""
+            SELECT id
+            FROM planning_version
+            ORDER BY id DESC
+            LIMIT 1
+        """).fetchone()
+
+        if not v:
+            return render_template("planning_view.html", orders=[])
+
+        version_id = v["id"]
+
+        items = conn_app.execute("""
+            SELECT num_reservation, position
+            FROM planning_items
+            WHERE version_id = ?
+            ORDER BY position ASC
+        """,(version_id,)).fetchall()
+
+        if not items:
+            return render_template("planning_view.html", orders=[])
+
+        nums=[it["num_reservation"] for it in items]
+        placeholders=",".join(["?"]*len(nums))
+
+        orders_data=conn_local.execute(f"""
+            SELECT num_reservation,cmdl,client,produit,qte,reste,situation
+            FROM orders
+            WHERE num_reservation IN ({placeholders})
+        """,nums).fetchall()
+
+        orders_map={r["num_reservation"]:r for r in orders_data}
+
+        orders=[]
+
+        for it in items:
+            o=orders_map.get(it["num_reservation"])
+            if not o: continue
+
+            orders.append({
+                "num":it["num_reservation"],
+                "cmdcl":o["cmdl"] or "",
+                "client":o["client"] or "",
+                "produit":o["produit"] or "",
+                "qte":int(o["qte"] or 0),
+                "reste":int(o["reste"] or 0),
+                "statut":(o["situation"] or "").strip(),
+                "pos":it["position"]
+            })
+
+        return render_template("planning_view.html",orders=orders)
+
+    finally:
+        conn_app.close()
+        conn_local.close()
+
+
+@app.route("/api/planning/data")
+@login_required
+def planning_data():
+
+    if current_user.role not in ("admin","superadmin","planning"):
+        return "Forbidden",403
+
+    conn_app = get_app_connection()
+    conn_local = get_db_connection()
+
+    try:
+        v = conn_app.execute("""
+            SELECT id
+            FROM planning_version
+            ORDER BY id DESC
+            LIMIT 1
+        """).fetchone()
+
+        if not v:
+            return jsonify({"orders":[]})
+
+        version_id = v["id"]
+
+        items = conn_app.execute("""
+            SELECT num_reservation, position
+            FROM planning_items
+            WHERE version_id=?
+            ORDER BY position
+        """,(version_id,)).fetchall()
+
+        nums=[it["num_reservation"] for it in items]
+
+        if not nums:
+            return jsonify({"orders":[]})
+
+        placeholders=",".join(["?"]*len(nums))
+
+        orders=conn_local.execute(f"""
+            SELECT num_reservation,cmdl,client,produit,qte,reste
+            FROM orders
+            WHERE num_reservation IN ({placeholders})
+        """,nums).fetchall()
+
+        orders_map={o["num_reservation"]:o for o in orders}
+
+        result=[]
+
+        for it in items:
+            o=orders_map.get(it["num_reservation"])
+            if not o: continue
+
+            result.append({
+                "num":it["num_reservation"],
+                "cmdcl":o["cmdl"],
+                "client":o["client"],
+                "produit":o["produit"],
+                "qte":o["qte"],
+                "reste":o["reste"]
+            })
+
+        return jsonify({"orders":result})
+
+    finally:
+        conn_app.close()
+        conn_local.close()
+
+
+init_app_db()
 if __name__ == "__main__":
     #app.run(debug=True, port=8888)
     app.run(host="0.0.0.0", port=8888, debug=True)

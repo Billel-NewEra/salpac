@@ -1960,42 +1960,51 @@ def planning_create():
     if current_user.role not in ("admin","superadmin"):
         return "Forbidden", 403
 
-    conn = get_db_connection()
+    conn_app = get_app_connection()
+    conn_local = get_db_connection()
 
-    rows = conn.execute("""
-        SELECT 
-            num_reservation,
-            cmdl,
-            client,
-            produit,
-            qte,
-            reste,
-            situation
+    cur_app = conn_app.cursor()
+
+    # 1️⃣ Créer version
+    now = datetime.utcnow().isoformat()
+    cur_app.execute("""
+        INSERT INTO planning_version (created_at, created_by)
+        VALUES (?,?)
+    """, (now, current_user.username))
+
+    version_id = cur_app.lastrowid
+
+    # 2️⃣ Récupérer commandes NON livrées
+    orders = conn_local.execute("""
+        SELECT num_reservation, situation, date_reservation
         FROM orders
         WHERE situation != 'LIVREE'
-          AND date_reservation IS NOT NULL
+            AND date_reservation IS NOT NULL
         ORDER BY date_reservation ASC
         LIMIT 10
     """).fetchall()
 
-    conn.close()
+    # 3️⃣ Insérer ordre initial
+    pos = 1
+    for o in orders:
+        cur_app.execute("""
+            INSERT INTO planning_items
+            (version_id, num_reservation, position, status_snapshot, updated_at)
+            VALUES (?,?,?,?,?)
+        """, (
+            version_id,
+            o["num_reservation"],
+            pos,
+            o["situation"],
+            now
+        ))
+        pos += 1
 
-    return jsonify({
-        "success": True,
-        "orders":[
-            {
-                "num": r["num_reservation"],
-                "cmdcl": r["cmdl"] or "",
-                "client": r["client"] or "",
-                "produit": r["produit"] or "",
-                "qte": int(r["qte"] or 0),
-                "reste": int(r["reste"] or 0),
-                "statut": (r["situation"] or "").strip()
-            }
-            for r in rows
-        ]
-    })
+    conn_app.commit()
+    conn_app.close()
+    conn_local.close()
 
+    return jsonify({"success":True,"version":version_id})
 
 @app.route("/planning")
 @login_required

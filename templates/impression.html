@@ -245,6 +245,7 @@ $("#commande_filter").select2({
     data:function(params){
       return {
         term:params.term,
+        scope:"impression"
       };
     },
     processResults:function(data){

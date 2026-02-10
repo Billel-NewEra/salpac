@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   username      TEXT    NOT NULL UNIQUE,
   password_hash TEXT    NOT NULL,
-  role          TEXT    NOT NULL CHECK (role IN ('superadmin', 'admin','client')),
+  role          TEXT    NOT NULL CHECK (role IN ('superadmin', 'admin', 'planning' , 'client')),
   client_id     INTEGER,
   is_active     INTEGER NOT NULL DEFAULT 1,
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -49,16 +49,19 @@ def ensure_schema(conn):
             conn.execute(s + ";")
 
 
-def upsert_admin(conn, username, password):
+def upsert_admin(conn, username, password, role):
     """Crée l’utilisateur admin s’il n’existe pas"""
     cur = conn.execute("SELECT id FROM users WHERE username = ?", (username,))
     if cur.fetchone():
         print(f"[OK] ✅ L'utilisateur admin '{username}' existe déjà.")
         return
+    if role not in ['superadmin', 'admin', 'planning' , 'client']:
+        print(f"Le role doit être ('superadmin', 'admin', 'planning', 'client')")
+        return
     pwd_hash = generate_password_hash(password)
     conn.execute(
-        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'superadmin')",
-        (username, pwd_hash),
+        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+        (username, pwd_hash, role),
     )
     conn.commit()
     print(f"[✅] Administrateur '{username}' créé avec succès.")
@@ -90,6 +93,7 @@ def main():
     ap.add_argument("--db", default=AUTH_DB, help="Chemin vers la base SQLite d'authentification")
     ap.add_argument("--username", default="superadmin", help="Nom d'utilisateur superadmin")
     ap.add_argument("--password", help="Mot de passe superadmin (sinon, demande interactive)")
+    ap.add_argument("--role", default="superadmin", help="Role(superadmin, admin, planning)")
     args = ap.parse_args()
 
     # Si aucun mot de passe fourni → on le demande à l’écran
@@ -104,7 +108,7 @@ def main():
     conn = sqlite3.connect(args.db)
     try:
         ensure_schema(conn)
-        upsert_admin(conn, args.username, args.password)
+        upsert_admin(conn, args.username, args.password, args.role)
         list_existing_users(conn)
     finally:
         conn.close()

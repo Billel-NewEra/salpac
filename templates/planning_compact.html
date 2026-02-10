@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+/* =========================
+   BASE
+========================= */
+
+.planning-item{
+    cursor:grab;
+    border-radius:8px !important;
+    font-size:0.95rem;
+    white-space:nowrap; /* Desktop */
+    background:#1f2937;
+    color:#e5e7eb;
+    border:1px solid rgba(255,255,255,0.05);
+    touch-action:manipulation;
+}
+
+.planning-item:hover{
+    background:#243041;
+}
+
+.planning-item:active{
+    cursor:grabbing;
+}
+
+.sortable-chosen{opacity:.4;}
+
+.sortable-ghost{
+    background:rgba(255,255,255,0.05)!important;
+    border:1px dashed rgba(255,255,255,0.25);
+}
+
+.remove-btn{
+    cursor:pointer;
+    margin-left:auto;
+    color:#f87171;
+}
+
+.select2-results__option{
+    padding:8px 12px;
+}
+
+
+/* =========================
+   LAYOUT COMMANDES
+========================= */
+
+.planning-main,
+.planning-meta{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+}
+
+.planning-main{
+    font-weight:500;
+}
+
+.planning-meta{
+    margin-top:4px;
+    font-size:0.85rem;
+}
+
+
+/* =========================
+   MOBILE OPTIMISÉ
+========================= */
+
+@media (max-width:576px){
+
+    .planning-item{
+        display:flex;
+        align-items:center;
+        gap:8px;
+        white-space:normal;
+        padding:12px;
+    }
+
+    .planning-main{
+        display:block;
+        flex:1;
+        line-height:1.2;
+        font-size:0.95rem;
+    }
+
+    .planning-main .product{
+        display:block;
+        font-size:0.85rem;
+        opacity:.8;
+    }
+
+    .planning-badges{
+        display:flex;
+        flex-direction:column;
+        gap:4px;
+        align-items:flex-end;
+    }
+
+    .bi-grip-vertical{
+        font-size:1.3rem;
+        padding:6px;
+    }
+}
+
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+<h3>📋 Planning Atelier</h3>
+
+<div>
+<button class="btn btn-secondary me-2" onclick="newPlanning()">🆕 Nouveau</button>
+<button class="btn btn-warning me-2" onclick="generatePlanning()">⚡ Générer</button>
+<button class="btn btn-success" onclick="saveOrder()">💾 Sauvegarder</button>
+</div>
+</div>
+
+<div class="card">
+<div class="card-body">
+
+<p class="text-secondary">Glissez-déposez pour définir la priorité.</p>
+
+<!-- Select2 toujours visible -->
+<div class="mb-3">
+<select id="addOrder" style="width:350px;"></select>
+</div>
+
+<ul id="planningList" class="list-group">
+{% for o in orders %}
+<li class="list-group-item planning-item d-flex align-items-center"
+    data-id="{{ o.num }}">
+
+<i class="bi bi-grip-vertical me-2 text-secondary"></i>
+
+<strong class="me-3">#{{ o.num }}</strong>
+<span class="me-3 text-info">{{ o.cmdcl }}</span>
+<span class="me-3">{{ o.client }}</span>
+
+<span class="badge bg-primary me-2">Qte {{ o.qte }}</span>
+<span class="badge bg-warning text-dark">Reste {{ o.reste }}</span>
+
+<i class="bi bi-x-lg remove-btn"></i>
+
+</li>
+{% endfor %}
+</ul>
+
+</div>
+</div>
+
+{% endblock %}
+
+
+
+{% block scripts %}
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<!-- Select2 -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function(){
+
+const planningList = document.getElementById("planningList");
+
+/* Drag & drop */
+new Sortable(planningList,{
+    animation:150,
+    ghostClass:"sortable-ghost",
+    chosenClass:"sortable-chosen"
+});
+
+function formatCommande(c){
+
+    if(!c.id) return c.text;
+
+    return $(`
+        <div>
+            <div>
+                <strong>#${c.id}</strong>
+                — ${c.cmdcl}
+                — ${c.client}
+            </div>
+
+            <div style="font-size:12px;color:#9ca3af;">
+                ${c.produit}
+                | Qte ${c.qte}
+                | Reste ${c.reste}
+                | ${c.statut}
+            </div>
+        </div>
+    `);
+}
+
+$("#addOrder").select2({
+    placeholder:"Ajouter commande...",
+    minimumInputLength:0,
+    escapeMarkup: m => m,
+    ajax:{
+        url:"/api/planning/search",
+        dataType:"json",
+        delay:250,
+        cache:true,   // 🔥 IMPORTANT
+        data: params => ({
+
+    term: params.term || "",
+    page: params.page || 1,
+
+    exclude: Array.from(
+        document.querySelectorAll("#planningList li")
+    ).map(li => li.dataset.id)
+}),
+        processResults: function(data){
+
+    const existingIds = Array.from(
+        document.querySelectorAll("#planningList li")
+    ).map(li => li.dataset.id);
+
+    const filtered = data.results.filter(r =>
+        !existingIds.includes(String(r.id))
+    );
+
+    return {
+        results: filtered,
+        pagination: data.pagination  // 🔥 IMPORTANT
+    };
+}
+    },
+
+    templateResult: formatCommande,
+
+    templateSelection: function(c){
+        if(!c.cmdcl) return c.text;
+        return c.cmdcl;
+    }
+});
+
+
+
+/* AJOUT DANS LISTE (sans reload) */
+$("#addOrder").on("select2:select", function(e){
+
+    const num=e.params.data.id;
+
+    // éviter doublon
+    if(document.querySelector(`[data-id='${num}']`)) return;
+
+    const li=document.createElement("li");
+    li.className="list-group-item planning-item d-flex align-items-center";
+    li.dataset.id=num;
+
+    const d = e.params.data;
+
+    function getStatusBadge(statut){
+
+    statut = (statut || "").toUpperCase();
+
+    if(statut === "LIVREE")
+        return '<span class="badge me-2 bg-success-subtle text-success">Livrée</span>';
+
+    if(statut === "LIVRAISON")
+        return '<span class="badge me-2 bg-info-subtle text-info">Livraison</span>';
+
+    if(statut === "BAG")
+        return '<span class="badge me-2 bg-bag-subtle text-bag">BAG</span>';
+
+    if(statut === "EN COURS")
+        return '<span class="badge me-2 bg-warning-subtle text-warning">En cours</span>';
+
+    return `<span class="badge me-2 bg-secondary">${statut}</span>`;
+    }
+
+li.innerHTML = `
+<i class="bi bi-grip-vertical me-2 text-secondary"></i>
+
+
+
+  <div class="planning-main">
+    <strong>#${num}</strong>
+    <span class="text-info ms-2">${d.cmdcl}</span>
+    <span class="me-2 text-secondary">${d.produit}</span>
+  </div>
+
+  <div class="planning-badges">
+  <span class="badge bg-warning text-dark">
+    Reste ${d.reste}
+  </span>
+  ${getStatusBadge(d.statut)}
+</div>
+
+
+<i class="bi bi-x-lg remove-btn"></i>
+`;
+
+    planningList.appendChild(li);
+
+    // 🔥 reset + reopen
+    $("#addOrder").val(null).trigger("change");
+    $("#addOrder").select2("open");
+});
+
+
+/* SUPPRESSION */
+$(document).on("click",".remove-btn",function(){
+    $(this).closest("li").remove();
+});
+
+});
+
+/* SAVE */
+function saveOrder(){
+
+const btn = event.target;
+btn.disabled = true;
+
+const order=[];
+document.querySelectorAll("#planningList li").forEach(el=>{
+    order.push(el.dataset.id);
+});
+
+fetch("/planning/save",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({order:order})
+})
+.then(()=>alert("Ordre sauvegardé !"))
+.finally(()=>btn.disabled=false);
+}
+
+/* NOUVEAU */
+function newPlanning(){
+if(!confirm("Nouveau planning vide ?")) return;
+fetch("/admin/planning/new",{method:"POST"}).then(()=>location.reload());
+}
+
+/* GENERATE */
+function generatePlanning(){
+fetch("/admin/planning/create",{method:"POST"}).then(()=>location.reload());
+}
+
+/* VERSION AUTO REFRESH */
+let currentVersion=0;
+
+fetch("/api/planning/version")
+.then(r=>r.json())
+.then(d=>currentVersion=d.version);
+
+setInterval(()=>{
+fetch("/api/planning/version")
+.then(r=>r.json())
+.then(d=>{
+    if(d.version!=currentVersion) location.reload();
+});
+},30000);
+</script>
+
+{% endblock %}
+
+
