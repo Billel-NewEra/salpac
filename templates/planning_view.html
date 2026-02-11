@@ -354,7 +354,11 @@ async function checkVersion(){
 }
 
 async function loadPlanning(){
-    const r = await fetch(API_DATA);
+
+    const r = await fetch(API_DATA + "?t=" + Date.now(), {
+        cache: "no-store"
+    });
+
     const d = await r.json();
 
     const container = document.querySelector(".planning-list");
@@ -381,7 +385,7 @@ async function loadPlanning(){
 initVersion();
 loadPlanning();
 
-setInterval(checkVersion,5000);
+setInterval(loadPlanning,10000);
 
 </script>
 

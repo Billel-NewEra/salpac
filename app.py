@@ -2032,6 +2032,26 @@ def planning():
     conn_local = get_db_connection()
 
     try:
+        # 1️⃣ récupérer LIVRÉES depuis local.sqlite
+        livrees = conn_local.execute("""
+            SELECT num_reservation
+            FROM orders
+            WHERE situation='LIVREE'
+        """).fetchall()
+
+        if livrees:
+        
+            ids = [str(r["num_reservation"]) for r in livrees]
+            placeholders = ",".join(["?"] * len(ids))
+
+            # 2️⃣ supprimer dans app.sqlite
+            conn_app.execute(f"""
+                DELETE FROM planning_items
+                WHERE num_reservation IN ({placeholders})
+            """, ids)
+
+            conn_app.commit()
+
         # 1️⃣ Dernière version
         v = conn_app.execute("""
             SELECT id
@@ -2333,6 +2353,26 @@ def planning_view():
     conn_local = get_db_connection()
 
     try:
+        # 1️⃣ récupérer LIVRÉES depuis local.sqlite
+        livrees = conn_local.execute("""
+            SELECT num_reservation
+            FROM orders
+            WHERE situation='LIVREE'
+        """).fetchall()
+
+        if livrees:
+        
+            ids = [str(r["num_reservation"]) for r in livrees]
+            placeholders = ",".join(["?"] * len(ids))
+
+            # 2️⃣ supprimer dans app.sqlite
+            conn_app.execute(f"""
+                DELETE FROM planning_items
+                WHERE num_reservation IN ({placeholders})
+            """, ids)
+
+            conn_app.commit()
+        
         v = conn_app.execute("""
             SELECT id
             FROM planning_version
@@ -2401,6 +2441,24 @@ def planning_data():
     conn_local = get_db_connection()
 
     try:
+        # nettoyage automatique
+        livrees = conn_local.execute("""
+            SELECT num_reservation
+            FROM orders
+            WHERE situation='LIVREE'
+        """).fetchall()
+
+        if livrees:
+            ids=[str(r["num_reservation"]) for r in livrees]
+            placeholders=",".join(["?"]*len(ids))
+        
+            conn_app.execute(f"""
+                DELETE FROM planning_items
+                WHERE num_reservation IN ({placeholders})
+            """,ids)
+        
+            conn_app.commit()
+
         v = conn_app.execute("""
             SELECT id
             FROM planning_version
@@ -2431,6 +2489,7 @@ def planning_data():
             SELECT num_reservation,cmdl,client,produit,qte,reste
             FROM orders
             WHERE num_reservation IN ({placeholders})
+              AND situation != 'LIVREE'
         """,nums).fetchall()
 
         orders_map={o["num_reservation"]:o for o in orders}
@@ -2455,6 +2514,24 @@ def planning_data():
     finally:
         conn_app.close()
         conn_local.close()
+
+@app.route("/api/planning/livrees")
+@login_required
+def planning_livrees():
+
+    conn = get_db_connection()
+
+    rows = conn.execute("""
+        SELECT num_reservation
+        FROM orders
+        WHERE situation='LIVREE'
+    """).fetchall()
+
+    conn.close()
+
+    return jsonify({
+        "ids":[r["num_reservation"] for r in rows]
+    })
 
 
 init_app_db()

@@ -946,6 +946,40 @@ function generatePlanning(){
     }
 }
 
+/* ===== AUTO CLEAN LIVRÉES (FINAL) ===== */
+
+async function refreshPlanning(){
+
+    try{
+
+        const r = await fetch("/api/planning/livrees");
+        const data = await r.json();
+
+        const livrees = data.ids.map(String);
+
+        document.querySelectorAll("#planningList li").forEach(li=>{
+
+            if(livrees.includes(li.dataset.id)){
+
+                li.style.transition="0.3s";
+                li.style.opacity="0";
+                li.style.transform="translateX(40px)";
+
+                setTimeout(()=>{
+                    li.remove();
+                },300);
+            }
+
+        });
+
+    }catch(e){
+        console.log("refreshPlanning error",e);
+    }
+}
+
+/* toutes les 10 secondes */
+setInterval(refreshPlanning,10000);
+
 </script>
 
 {% endblock %}
