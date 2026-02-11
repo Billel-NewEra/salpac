@@ -70,7 +70,7 @@
     </p>
 
     {% set endpoint = 'clients' %}
-    {% set params = {} %}
+    {% set params = {'period': period, 'company': company} %}
     {% include 'pagination.html'%}
   </div>
 </div>

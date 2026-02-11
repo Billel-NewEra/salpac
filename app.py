@@ -641,6 +641,7 @@ def weekly_activity():
 def clients():
     conn = get_db_connection()
 
+    period = request.args.get("period", "all")
     page = request.args.get("page", 1, type=int)
     per_page = 9
 
@@ -661,6 +662,31 @@ def clients():
 
     params = []
     count_params = []
+
+    # ✅ Filtre période (month)
+    if period == "month":
+        today = datetime.today()
+
+        month_start = today.replace(day=1).strftime("%Y-%m-%d")
+
+        if today.month == 12:
+            next_month = today.replace(year=today.year + 1, month=1, day=1)
+        else:
+            next_month = today.replace(month=today.month + 1, day=1)
+
+        month_end = next_month.strftime("%Y-%m-%d")
+
+        query += """
+            AND date(date_creation) >= date(?)
+            AND date(date_creation) < date(?)
+        """
+        count_query += """
+            AND date(date_creation) >= date(?)
+            AND date(date_creation) < date(?)
+        """
+
+        params += [month_start, month_end]
+        count_params += [month_start, month_end]
 
     # 🔎 filtre entreprise
     if company:
@@ -701,7 +727,8 @@ def clients():
         end=end,
         total_clients=total_clients,
         companies=companies,
-        company=company
+        company=company,
+        period=period
     )
 
 
@@ -718,6 +745,7 @@ def orders():
     client = request.args.get("client", "").strip()
     product = request.args.get("product", "").strip()
     cmdcl = request.args.get("cmdcl", "").strip()
+    situation = request.args.get("situation")
 
     if status and status != "all":
         status = status.upper()
@@ -787,6 +815,13 @@ def orders():
         count_query += " AND situation = ? COLLATE NOCASE"
         params.append(status)
         count_params.append(status)
+
+    # 🔥 filtre depuis dashboard
+    if situation:
+        query += " AND situation = ? COLLATE NOCASE"
+        count_query += " AND situation = ? COLLATE NOCASE"
+        params.append(situation)
+        count_params.append(situation)
 
     if cmdcl:
         query += " AND TRIM(cmdl) = TRIM(?)"

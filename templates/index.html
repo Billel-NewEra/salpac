@@ -13,6 +13,16 @@
   color: #fb923c !important;
 }
 
+.command-item{
+    cursor:pointer;
+    transition:0.15s;
+}
+
+.command-item:hover{
+    transform:translateX(4px);
+    opacity:0.9;
+}
+
 </style>
 {% if session.pop("welcome", None) and current_user.is_authenticated %}
 <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2000;">
@@ -46,7 +56,13 @@
     <div class="tile-content">
       <div class="tile-title">Clients actifs</div>
       <div class="tile-value">{{ total_clients }}</div>
-      <div class="tile-sub">Nouveaux ce mois: {{ new_clients }}</div>
+      <div class="tile-sub">
+        Nouveaux ce mois:
+        <a href="{{ url_for('clients') }}?period=month"
+           class="text-white fw-bold">
+           {{ new_clients }}
+        </a>
+      </div>
     </div>
     <div class="tile-icon">
       <i class="bi bi-people-fill"></i>
@@ -64,48 +80,60 @@
       </div>
 
       <!-- En cours -->
-      <div class="command-item mb-3">
-        <div class="bg-warning-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
-          <iconify-icon icon="solar:pause-line-duotone" class="fs-4 text-warning"></iconify-icon>
+      <a href="{{ url_for('orders') }}?situation=EN COURS" 
+          class="text-decoration-none">
+        <div class="command-item mb-3">
+          <div class="bg-warning-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
+            <iconify-icon icon="solar:pause-line-duotone" class="fs-4 text-warning"></iconify-icon>
+          </div>
+          <div class="command-text">
+            <div class="fw-semibold text-white">{{ orders_encours }} commandes</div>
+            <div class="text-secondary small">En cours</div>
+          </div>
         </div>
-        <div class="command-text">
-          <div class="fw-semibold text-white">{{ orders_encours }} commandes</div>
-          <div class="text-secondary small">En cours</div>
-        </div>
-      </div>
+      </a>
 
       <!-- BAG -->
-      <div class="command-item mb-3">
-        <div class="bg-bag-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
-          <iconify-icon icon="solar:archive-line-duotone" class="fs-4 text-bag"></iconify-icon>
+      <a href="{{ url_for('orders') }}?situation=BAG" 
+        class="text-decoration-none">
+        <div class="command-item mb-3">
+          <div class="bg-bag-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
+            <iconify-icon icon="solar:archive-line-duotone" class="fs-4 text-bag"></iconify-icon>
+          </div>
+          <div class="command-text">
+            <div class="fw-semibold text-white">{{ orders_bag }} commandes</div>
+            <div class="text-secondary small">en BAG</div>
+          </div>
         </div>
-        <div class="command-text">
-          <div class="fw-semibold text-white">{{ orders_bag }} commandes</div>
-          <div class="text-secondary small">en BAG</div>
-        </div>
-      </div>
+      </a>
 
       <!-- En livraison -->
-      <div class="command-item mb-3">
-        <div class="bg-indigo-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
-          <iconify-icon icon="solar:bicycling-round-bold-duotone" class="fs-4 text-indigo"></iconify-icon>
+      <a href="{{ url_for('orders') }}?situation=LIVRAISON" 
+        class="text-decoration-none">
+        <div class="command-item mb-3">
+          <div class="bg-indigo-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
+            <iconify-icon icon="solar:bicycling-round-bold-duotone" class="fs-4 text-indigo"></iconify-icon>
+          </div>
+          <div class="command-text">
+            <div class="fw-semibold text-white">{{ orders_livraison }} commandes</div>
+            <div class="text-secondary small">En livraison</div>
+          </div>
         </div>
-        <div class="command-text">
-          <div class="fw-semibold text-white">{{ orders_livraison }} commandes</div>
-          <div class="text-secondary small">En livraison</div>
-        </div>
-      </div>
+      </a>
 
       <!-- Livrées -->
-      <div class="command-item">
-        <div class="bg-success-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
-          <iconify-icon icon="solar:cart-5-line-duotone" class="fs-4 text-success"></iconify-icon>
+      <a href="{{ url_for('orders') }}?situation=LIVREE" 
+        class="text-decoration-none">
+        <div class="command-item">
+          <div class="bg-success-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
+            <iconify-icon icon="solar:cart-5-line-duotone" class="fs-4 text-success"></iconify-icon>
+          </div>
+          <div class="command-text">
+            <div class="fw-semibold text-white">{{ orders_livree }} commandes</div>
+            <div class="text-secondary small">Livrées</div>
+          </div>
         </div>
-        <div class="command-text">
-          <div class="fw-semibold text-white">{{ orders_livree }} commandes</div>
-          <div class="text-secondary small">Livrées</div>
-        </div>
-      </div>
+      </a>
     </div>
   </div>
 </div>

@@ -161,7 +161,7 @@
     </p>
 
     {% set endpoint='orders' %}
-    {% set params={'period':period,'status':status,'cmdcl':cmdcl,'client':client,'product':product,'start':start,'end':end} %}
+    {% set params={'period':period,'status':status,'situation':request.args.get('situation'),'cmdcl':cmdcl,'client':client,'product':product,'start':start,'end':end} %}
     {% include 'pagination.html' %}
   </div>
 </div>
