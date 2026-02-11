@@ -36,7 +36,7 @@
 <input type="date" name="end" value="{{ end }}" class="form-control">
 </div>
 
-{% if current_user.role=='admin' %}
+{% if current_user.role in ['superadmin','admin'] %}
 <!-- 🏢 Client -->
 <div class="col-md">
 <label class="form-label fw-semibold">🏢 Client</label>
@@ -74,7 +74,7 @@
 <tr>
 <th class="d-none d-md-table-cell">NL</th>
 
-{% if current_user.role=='admin' %}
+{% if current_user.role in ['superadmin','admin'] %}
 <th>Client</th>
 {% endif %}
 
@@ -90,7 +90,7 @@
 <tr>
 <td class="d-none d-md-table-cell">{{d.nl}}</td>
 
-{% if current_user.role=='admin' %}
+{% if current_user.role in ['superadmin','admin'] %}
 <td class="text-truncate" style="max-width:160px;">
 {{d.client}}
 </td>
@@ -114,11 +114,17 @@
 </div>
 
 <p class="text-secondary mt-2 text-center small">
-Affichage {{start}} – {{end}} sur {{total_delivery}} livraisons
+Affichage {{start_idx}} – {{end_idx}} sur {{total_delivery}} livraisons
 </p>
 
 {% set endpoint='delivery' %}
-{% set params={'period':period,'client':client,'product':product,'start':start,'end':end} %}
+{% set params={
+  'period': period,
+  'client': client,
+  'product': product,
+  'start': request.args.get('start'),
+  'end': request.args.get('end')
+} %}
 {% include 'pagination.html' %}
 
 </div>

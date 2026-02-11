@@ -745,7 +745,6 @@ def orders():
     client = request.args.get("client", "").strip()
     product = request.args.get("product", "").strip()
     cmdcl = request.args.get("cmdcl", "").strip()
-    situation = request.args.get("situation")
 
     if status and status != "all":
         status = status.upper()
@@ -815,13 +814,6 @@ def orders():
         count_query += " AND situation = ? COLLATE NOCASE"
         params.append(status)
         count_params.append(status)
-
-    # 🔥 filtre depuis dashboard
-    if situation:
-        query += " AND situation = ? COLLATE NOCASE"
-        count_query += " AND situation = ? COLLATE NOCASE"
-        params.append(situation)
-        count_params.append(situation)
 
     if cmdcl:
         query += " AND TRIM(cmdl) = TRIM(?)"

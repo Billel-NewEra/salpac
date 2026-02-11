@@ -80,7 +80,7 @@
       </div>
 
       <!-- En cours -->
-      <a href="{{ url_for('orders') }}?situation=EN COURS" 
+      <a href="{{ url_for('orders') }}?status=EN COURS" 
           class="text-decoration-none">
         <div class="command-item mb-3">
           <div class="bg-warning-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
@@ -94,7 +94,7 @@
       </a>
 
       <!-- BAG -->
-      <a href="{{ url_for('orders') }}?situation=BAG" 
+      <a href="{{ url_for('orders') }}?status=BAG" 
         class="text-decoration-none">
         <div class="command-item mb-3">
           <div class="bg-bag-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
@@ -108,7 +108,7 @@
       </a>
 
       <!-- En livraison -->
-      <a href="{{ url_for('orders') }}?situation=LIVRAISON" 
+      <a href="{{ url_for('orders') }}?status=LIVRAISON" 
         class="text-decoration-none">
         <div class="command-item mb-3">
           <div class="bg-indigo-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
@@ -122,7 +122,7 @@
       </a>
 
       <!-- Livrées -->
-      <a href="{{ url_for('orders') }}?situation=LIVREE" 
+      <a href="{{ url_for('orders') }}?status=LIVREE" 
         class="text-decoration-none">
         <div class="command-item">
           <div class="bg-success-subtle p-3 rounded-circle d-flex align-items-center justify-content-center">
@@ -144,7 +144,13 @@
     <div class="tile-content">
       <div class="tile-title">Livraisons</div>
       <div class="tile-value">{{ total_delivery }}</div>
-      <div class="tile-sub">Ce mois: {{ new_deliveries }}</div>
+      <div class="tile-sub">
+        Ce mois:
+        <a href="{{ url_for('delivery') }}?period=month"
+           class="fw-semibold text-white text-decoration-underline">
+           {{ new_deliveries }}
+        </a>
+      </div>
     </div>
     <div class="tile-icon"><i class="bi bi-truck"></i></div>
   </div>
