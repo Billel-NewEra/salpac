@@ -379,66 +379,6 @@
 .statut-LIVRAISON{color:#71bced;}
 .statut-BAG{color:#eb8628;}
 
-@media (max-width:576px){
-
-  .planning-main,
-  .planning-meta{
-      display:flex;
-      flex-wrap:wrap;      /* 🔥 clé */
-      min-width:0;         /* 🔥 clé */
-      gap:4px 6px;
-  }
-
-  .planning-content{
-      min-width:0;         /* 🔥 très important en flexbox */
-      width:100%;
-  }
-
-}
-
-@media (max-width:576px){
-
-  .planning-main span{
-      word-break:break-word;
-      overflow-wrap:anywhere;
-  }
-
-}
-
-@media (max-width:576px){
-
-  .planning-main .text-secondary{
-      flex-basis:100%;   /* produit sur ligne dédiée */
-      margin-left:0 !important;
-      opacity:0.9;
-  }
-
-}
-/* 
-
-@media (max-width:576px){
-
-  .planning-main{
-      display:grid;
-      grid-template-columns:auto 1fr;
-      gap:2px 8px;
-  }
-
-  .planning-main strong{
-      grid-row:1;
-  }
-
-  .planning-main .text-info{
-      grid-row:1;
-  }
-
-  .planning-main span:last-child{
-      grid-column:1 / -1;
-      word-break:break-word;
-  }
-
-}
-  optimal */
 
 </style>
 
@@ -487,7 +427,7 @@
   <div class="planning-main">
     <strong>#{{ o.num }}</strong>
     <span class="text-info ms-2">{{ o.cmdcl }}</span>
-    <span class="">{{ o.client }}</span>
+    <span class="ms-2">{{ o.client }}</span>
     <span class="me-2 text-secondary">{{ o.produit }}</span>
   </div>
 
@@ -887,7 +827,7 @@ function generatePlanning(){
   <div class="planning-main">
     <strong>#${o.num}</strong>
     <span class="text-info ms-2">${o.cmdcl}</span>
-    <span class="">${o.client}</span>
+    <span class="ms-2">${o.client}</span>
     <span class="me-2 text-secondary">${o.produit}</span>
   </div>
 

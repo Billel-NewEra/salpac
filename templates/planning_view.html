@@ -331,36 +331,44 @@ Reste {{ o.reste }}
 
 <script>
 
-let currentVersion=0;
+const API_VERSION = "{{ url_for('planning_version_api') }}";
+const API_DATA = "{{ url_for('planning_data') }}";
 
-/* Vérifie version */
+let currentVersion = 0;
+
+async function initVersion(){
+    const r = await fetch(API_VERSION);
+    const d = await r.json();
+    currentVersion = Number(d.version);
+}
+
 async function checkVersion(){
-    const r=await fetch("api/planning/version");
-    const d=await r.json();
+    const r = await fetch(API_VERSION);
+    const d = await r.json();
 
-    if(d.version!=currentVersion){
-        currentVersion=d.version;
+    const v = Number(d.version);
+
+    if(v !== currentVersion){
+        currentVersion = v;
         loadPlanning();
     }
 }
 
-/* Charge planning */
 async function loadPlanning(){
-    const r=await fetch("api/planning/data");
-    const d=await r.json();
+    const r = await fetch(API_DATA);
+    const d = await r.json();
 
-    const container=document.querySelector(".planning-list");
-    container.innerHTML="";
+    const container = document.querySelector(".planning-list");
+    container.innerHTML = "";
 
     d.orders.forEach((o,i)=>{
-        container.innerHTML+=`
+        container.innerHTML += `
         <div class="planning-item">
             <div class="line-top">
                 <span class="rank">P${i+1}</span>
                 ${o.num} —
                 <span class="cmdcl">${o.cmdcl}</span>
             </div>
-
             <div class="line-bottom">
                 <span class="chip client">${o.client}</span>
                 <span class="chip produit">${o.produit}</span>
@@ -369,42 +377,12 @@ async function loadPlanning(){
             </div>
         </div>`;
     });
-    
 }
 
-/* Toutes les 5s */
-setInterval(checkVersion,5000);
-
-/* Chargement initial */
+initVersion();
 loadPlanning();
 
-
-/* Date & heure live */
-
-function updateDateTime(){
-    const now = new Date();
-
-    const time = now.toLocaleTimeString("fr-FR",{
-        hour:"2-digit",
-        minute:"2-digit",
-        second:"2-digit"
-    });
-
-    const date = now.toLocaleDateString("fr-FR",{
-        weekday:"long",
-        day:"2-digit",
-        month:"long",
-        year:"numeric"
-    });
-
-    document.getElementById("datetime").innerHTML = `
-        <div class="time">${time}</div>
-        <div class="date">${date}</div>
-    `;
-}
-
-updateDateTime();
-setInterval(updateDateTime,1000);
+setInterval(checkVersion,5000);
 
 </script>
 

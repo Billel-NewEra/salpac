@@ -2127,14 +2127,14 @@ def planning_version_api():
     conn = get_app_connection()
 
     v = conn.execute("""
-        SELECT MAX(id) as version
-        FROM planning_version
+        SELECT MAX(updated_at) as last_update
+        FROM planning_items
     """).fetchone()
 
     conn.close()
 
     return jsonify({
-        "version": v["version"] if v and v["version"] else 0
+        "version": v["last_update"] if v and v["last_update"] else "0"
     })
 
 @app.route("/admin/planning/new", methods=["POST"])
