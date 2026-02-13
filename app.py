@@ -160,6 +160,26 @@ def datetime_format(value):
 
     return value
 
+
+def format_op_date(dt):
+    if not dt:
+        return "--:--"
+
+    if isinstance(dt, str):
+        dt = datetime.fromisoformat(dt)
+
+    today = date.today()
+    d = dt.date()
+
+    if d == today:
+        return dt.strftime("%H:%M")
+
+    if (today - d).days == 1:
+        return "Hier " + dt.strftime("%H:%M")
+
+    # ancien → date courte seulement
+    return dt.strftime("%d %b")
+
 def init_app_db():
     conn = get_app_connection()
     cur = conn.cursor()
@@ -427,6 +447,81 @@ def index():
 
         pliage_cmd_labels = [r["num_commande"] for r in top_pliage]
         pliage_qte = [r["total_qte"] for r in top_pliage]
+        
+        # 🔵 DERNIÈRES OPÉRATIONS (date la plus récente)
+
+        # 🖨️ Dernière impression
+        last_imp = conn.execute("""
+            SELECT 
+                i.date_impression as heure,
+                i.num_commande,
+                o.cmdl AS cmdcl,
+                i.article,
+                i.user,
+                COALESCE(i.feuilles,0) as feuilles,
+                COALESCE(i.etuis,0) as etuis
+            FROM impressions i
+            LEFT JOIN orders o
+                ON i.num_commande = o.num_reservation
+            WHERE i.date_impression IS NOT NULL
+            ORDER BY i.date_impression DESC
+            LIMIT 1
+        """).fetchone()
+
+        last_imp_feuilles = last_imp["feuilles"] if last_imp else 0
+        last_imp_etuis = last_imp["etuis"] if last_imp else 0
+        last_imp_date = format_op_date(last_imp["heure"]) if last_imp else None
+        last_imp_product = last_imp["article"] if last_imp else None
+        last_imp_cmd = last_imp["cmdcl"] if last_imp else None
+        last_imp_user = last_imp["user"] if last_imp else None
+
+
+        # ✂️ Dernière découpe
+        last_decoupe = conn.execute("""
+            SELECT 
+                d.date_decoupage as heure,
+                d.num_commande,
+                o.cmdl AS cmdcl,
+                d.description,
+                d.user,
+                COALESCE(d.feuilles,0) as feuilles
+            FROM decoupage d
+            LEFT JOIN orders o
+                ON d.num_commande = o.num_reservation
+            WHERE d.date_decoupage IS NOT NULL
+            ORDER BY d.date_decoupage DESC
+            LIMIT 1
+        """).fetchone()
+
+        last_decoupe_feuilles = last_decoupe["feuilles"] if last_decoupe else 0
+        last_decoupe_date = format_op_date(last_decoupe["heure"]) if last_decoupe else None
+        last_decoupe_product = last_decoupe["description"] if last_decoupe else None
+        last_decoupe_cmd = last_decoupe["cmdcl"]
+        last_decoupe_user = last_decoupe["user"] if last_decoupe else None
+
+
+        # 📦 Dernier pliage
+        last_pliage = conn.execute("""
+            SELECT 
+                p.date_pliage as heure,
+                p.num_commande,
+                o.cmdl AS cmdcl,
+                p.description,
+                p.user,
+                COALESCE(p.qte_pli,0) as qte
+            FROM pliage p
+            LEFT JOIN orders o
+                ON p.num_commande = o.num_reservation
+            WHERE p.date_pliage IS NOT NULL
+            ORDER BY p.date_pliage DESC
+            LIMIT 1
+        """).fetchone()
+
+        last_pliage_etuis = last_pliage["qte"] if last_pliage else 0
+        last_pliage_date = format_op_date(last_pliage["heure"]) if last_pliage else None
+        last_pliage_product = last_pliage["description"] if last_pliage else None
+        last_pliage_cmd = last_pliage["cmdcl"]
+        last_pliage_user = last_pliage["user"] if last_pliage else None
     else:
         # Vue client → totaux spécifiques à son entreprise
         client = conn.execute("SELECT Entreprise FROM client WHERE N = ?", (current_user.client_id,)).fetchone()
@@ -627,6 +722,22 @@ def index():
         decoupe_feuilles=decoupe_feuilles,
         pliage_cmd_labels=pliage_cmd_labels,
         pliage_qte=pliage_qte,
+        last_imp_feuilles=last_imp_feuilles,
+        last_imp_etuis=last_imp_etuis,
+        last_decoupe_feuilles=last_decoupe_feuilles,
+        last_pliage_etuis=last_pliage_etuis,
+        last_imp_date=last_imp_date,
+        last_decoupe_date=last_decoupe_date,
+        last_pliage_date=last_pliage_date,
+        last_imp_product=last_imp_product,
+        last_decoupe_product=last_decoupe_product,
+        last_pliage_product=last_pliage_product,
+        last_imp_cmd=last_imp_cmd,
+        last_decoupe_cmd=last_decoupe_cmd,
+        last_pliage_cmd=last_pliage_cmd,
+        last_imp_user=last_imp_user,
+        last_decoupe_user=last_decoupe_user,
+        last_pliage_user=last_pliage_user,
     )
 
 # ---- Dashboard (graphs) ----
@@ -2451,12 +2562,12 @@ def planning_data():
         if livrees:
             ids=[str(r["num_reservation"]) for r in livrees]
             placeholders=",".join(["?"]*len(ids))
-        
+
             conn_app.execute(f"""
                 DELETE FROM planning_items
                 WHERE num_reservation IN ({placeholders})
             """,ids)
-        
+
             conn_app.commit()
 
         v = conn_app.execute("""
