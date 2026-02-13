@@ -586,55 +586,58 @@ document.addEventListener('DOMContentLoaded', function () {
     },
 
     tooltip: {
-  custom: function({ series, dataPointIndex, w }) {
-
-    const info = opsInfo[dataPointIndex];
-
-    const feuilles = series[0][dataPointIndex];
-    const etuis = series[1][dataPointIndex];
-
-    return `
-    <div style="
-      padding:12px 14px;
+      shared: true,
+      intersect: false,
+      followCursor: true, // optionnel mais top UX
+      custom: function({ series, dataPointIndex, w }) {
       
-      color:#e5e7eb;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,0.08);
-      box-shadow:0 6px 18px rgba(0,0,0,0.4);
-      font-size:13px;
-      min-width:180px;
-    ">
+        const info = opsInfo[dataPointIndex];
+      
+        const feuilles = series[0][dataPointIndex];
+        const etuis = series[1][dataPointIndex];
+      
+        return `
+        <div style="
+          padding:12px 14px;
 
-      <div style="
-        font-weight:600;
-        margin-bottom:8px;
-        color:#cbd5f5;
-      ">
-        ${w.globals.labels[dataPointIndex]}
-      </div>
-
-      <div style="margin-bottom:6px">
-        🔵 Feuilles : <b>${feuilles ?? "-"}</b><br>
-        🟢 Étuis : <b>${etuis ?? "-"}</b>
-      </div>
-
-      <hr style="
-        border:none;
-        height:1px;
-        background:rgba(255,255,255,0.08);
-        margin:6px 0;
-      ">
-
-      <div>
-        📦 <b>${info.product || "-"}</b><br>
-        👤 ${info.user || "-"}<br>
-        🕒 ${info.time || "-"}
-      </div>
-
-    </div>
-    `;
-  }
-}
+          color:#e5e7eb;
+          border-radius:10px;
+          border:1px solid rgba(255,255,255,0.08);
+          box-shadow:0 6px 18px rgba(0,0,0,0.4);
+          font-size:13px;
+          min-width:180px;
+        ">
+      
+          <div style="
+            font-weight:600;
+            margin-bottom:8px;
+            color:#cbd5f5;
+          ">
+            ${w.globals.labels[dataPointIndex]}
+          </div>
+        
+          <div style="margin-bottom:6px">
+            🔵 Feuilles : <b>${feuilles ?? "-"}</b><br>
+            🟢 Étuis : <b>${etuis ?? "-"}</b>
+          </div>
+        
+          <hr style="
+            border:none;
+            height:1px;
+            background:rgba(255,255,255,0.08);
+            margin:6px 0;
+          ">
+        
+          <div>
+            📦 <b>${info.product || "-"}</b><br>
+            👤 ${info.user || "-"}<br>
+            🕒 ${info.time || "-"}
+          </div>
+        
+        </div>
+        `;
+      }
+    }
 
   };
 
@@ -808,7 +811,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 
-<!-- Activités par jour de la semaine -->
+<!-- Activités des 7 derniers jours -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -833,6 +836,14 @@ document.addEventListener('DOMContentLoaded', function () {
       categories: days,
       labels: {
         style: { colors: '#aeb5cc', fontSize: '13px' }
+      }
+    },
+    yaxis: {
+      tickAmount: 5,
+      decimalsInFloat: 0,
+      forceNiceScale: true,
+      labels: {
+        formatter: val => Math.round(val)
       }
     },
     legend: {
@@ -882,241 +893,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-<!-- Nombre d'impressions par commande -->
-<script>
-document.addEventListener('DOMContentLoaded', function () {
 
-  const labels = {{ imp_cmd_labels|tojson }};
-  const feuilles = {{ imp_feuilles|tojson }};
-  const etuis = {{ imp_etuis|tojson }};
-
-  const options = {
-    chart: {
-      type: 'bar',
-      height: 300,
-      toolbar: { show: false },
-      background: 'transparent',
-      stacked: true
-    },
-
-    series: [
-      { name: "Feuilles", data: feuilles },
-      { name: "Étuis", data: etuis }
-    ],
-
-    xaxis: {
-      categories: labels,
-      labels: { style: { colors: '#aeb5cc' } }
-    },
-
-    yaxis: {
-      labels: { style: { colors: '#aeb5cc' } }
-    },
-
-    colors: ['#49BEFF', '#22C55E'],
-
-    plotOptions: {
-      bar: {
-        borderRadius: 6,
-        columnWidth: '55%'
-      }
-    },
-
-    grid: {
-      borderColor: 'rgba(255,255,255,0.05)'
-    },
-
-    legend: {
-      position: 'bottom',
-      labels: { colors: '#aeb5cc' }
-    },
-
-    tooltip: {
-      theme: 'dark',
-      shared: true,
-      intersect: false,
-      y: {
-        formatter: function(val) {
-          return val.toLocaleString();
-        }
-      }
-    }
-  };
-
-  new ApexCharts(
-    document.querySelector("#chartImpressionsCmd"),
-    options
-  ).render();
-
-});
-</script>
-
-<!-- Nombre de découpes par commande (top 10) -->
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-
-  const labels = {{ decoupe_cmd_labels|tojson }};
-  const data = {{ decoupe_feuilles|tojson }};
-
-  const options = {
-    chart: {
-      type: 'bar',
-      height: 300,
-      toolbar: { show: false },
-      background: 'transparent'
-    },
-
-    series: [{
-      name: "Feuilles découpées",
-      data: data
-    }],
-
-    xaxis: {
-  categories: labels,
-  labels: {
-    style: { colors: '#cbd5f5' } // gris clair premium
-  }
-},
-
-yaxis: {
-  labels: {
-    style: { colors: '#cbd5f5' }
-  }
-},
-
-    colors: ['#F97316'],
-
-    plotOptions: {
-      bar: {
-        borderRadius: 6,
-        horizontal: true,
-        barHeight: '60%'
-      }
-    },
-
-    // ✅ ICI ON ACTIVE
-    dataLabels: { 
-      enabled: true,
-      formatter: val => val.toLocaleString(),
-      offsetX: 8,
-      style: {
-        fontSize: '12px',
-        fontWeight: 600,
-        colors: ["#e6eef8"]
-      }
-    },
-
-    grid: {
-      borderColor: 'rgba(255,255,255,0.05)'
-    },
-    fill: {
-  type: 'gradient',
-  gradient: {
-    shade: 'dark',
-    type: "vertical",
-    shadeIntensity: 0.5,
-    gradientToColors: ['#FDBA74'], // pour découpes
-    opacityFrom: 1,
-    opacityTo: 0.7,
-  }
-},
-
-    legend: {
-      labels: { colors: '#aeb5cc' }
-    },
-
-    tooltip: {
-      theme: 'dark',
-      shared: true,
-    intersect: false,
-      y: {
-        formatter: val => val.toLocaleString() + " feuilles"
-      }
-    }
-  };
-
-  new ApexCharts(
-    document.querySelector("#chartDecoupe"),
-    options
-  ).render();
-
-});
-</script>
-
-<!-- Pliage par commande ( Top 10 ) pour le mois courant -->
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-
-  const labels = {{ pliage_cmd_labels|tojson }};
-  const data = {{ pliage_qte|tojson }};
-
-  const options = {
-  chart: {
-    type: 'bar',
-    height: 300,
-    toolbar: { show: false },
-    background: 'transparent'
-  },
-
-  series: [{
-    name: "Étuis pliés",
-    data: data
-  }],
-
-  xaxis: {
-  categories: labels,
-  labels: { 
-    style: { colors: '#cbd5f5' }
-  }
-},
-
-yaxis: {
-  labels: { 
-    style: { colors: '#cbd5f5' }
-  }
-},
-
-  colors: ['#ac892d'], // violet premium
-
-  plotOptions: {
-    bar: {
-      borderRadius: 6,
-      columnWidth: '55%',
-      dataLabels: {
-        position: 'top' // force au-dessus de la barre
-      }
-    }
-  },
-
-  // ⭐ ICI
-  dataLabels: {
-    enabled: true,
-    formatter: val => val.toLocaleString(),
-    style: {
-      fontSize: '12px',
-      fontWeight: 600,
-      colors: ["#e6eef8"]
-    }
-  },
-
-  grid: {
-    borderColor: 'rgba(255,255,255,0.05)'
-  },
-
-  tooltip: {
-    theme: 'dark',
-    shared: true,
-    intersect: false,
-  }
-};
-
-  new ApexCharts(
-    document.querySelector("#chartPliage"),
-    options
-  ).render();
-
-});
-</script>
 
 <!-- 💎 Harmonisation de toutes les légendes ApexCharts -->
 
