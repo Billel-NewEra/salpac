@@ -283,63 +283,43 @@
     <div class="col-12 col-md-6 col-lg-6">
       <div class="chart-card">
         <div class="chart-title ops-title">
-  Dernières opérations atelier
-</div>
-
-<!-- Ligne opérations -->
-<div class="d-flex flex-column gap-2 small mb-3">
-
-  <!-- 🖨️ Impression -->
-  <div class="op-chip" 
-     title="{{ last_imp_cmd }} - {{ last_imp_product }} - {{ last_imp_user }}">
-
-  <i class="bi bi-printer text-info"></i>
-    <span class="prod">{{ last_imp_product or "-" }}</span>
-    <span class="user">{{ last_imp_user or "-" }}</span>
-  <span class="time">{{ last_imp_date or "--:--" }}</span>
-
-</div>
-
-  <!-- ✂️ Découpe -->
-  <div class="op-chip"
-     title="{{ last_decoupe_cmd }} - {{ last_decoupe_product }} - {{ last_decoupe_user }}">
-
-  <i class="bi bi-scissors text-warning"></i>
-  <span class="prod">{{ last_decoupe_product }}</span>
-  <span class="user">{{ last_decoupe_user }}</span>
-  <span class="time">{{ last_decoupe_date or "--:--" }}</span>
-
-</div>
-
-  <!-- 📦 Pliage -->
-  <div class="op-chip"
-     title="{{ last_pliage_cmd }} - {{ last_pliage_product }} - {{ last_pliage_user }}">
-
-  <i class="bi bi-box-seam text-success"></i>
-  <span class="prod">{{ last_pliage_product }}</span>
-  <span class="user">{{ last_pliage_user }}</span>
-  <span class="time">{{ last_pliage_date or "--:--" }}</span>
-
-</div>
-
-</div>
-
-
-
-      
-        <div id="chartLastOps"></div>
-      </div>
-    </div>
-
-  <!-- Commandes par client --> 
-    <div class="col-12 col-md-6 col-lg-6">
-      <div class="chart-card">
-        <div class="chart-title">Commandes par client ( Top 10 )
-          <span class="text-secondary small">
-            — {{ month_label }} {{ current_year }}
-          </span>
+          Dernières opérations atelier
         </div>
-        <div id="chartOrdersByClient"></div>
+
+        <!-- Ligne opérations -->
+        <div class="d-flex flex-column gap-2 small mb-3">
+        
+          <!-- 🖨️ Impression -->
+          <div class="op-chip" 
+             title="{{ last_imp_cmd }} - {{ last_imp_product }} - {{ last_imp_user }}">
+        
+            <i class="bi bi-printer text-info"></i>
+              <span class="prod">{{ last_imp_product or "-" }}</span>
+              <span class="user">{{ last_imp_user or "-" }}</span>
+            <span class="time">{{ last_imp_date or "--:--" }}</span>
+          </div>
+
+          <!-- ✂️ Découpe -->
+          <div class="op-chip"
+             title="{{ last_decoupe_cmd }} - {{ last_decoupe_product }} - {{ last_decoupe_user }}">
+
+            <i class="bi bi-scissors text-warning"></i>
+            <span class="prod">{{ last_decoupe_product }}</span>
+            <span class="user">{{ last_decoupe_user }}</span>
+            <span class="time">{{ last_decoupe_date or "--:--" }}</span>
+          </div>
+
+          <!-- 📦 Pliage -->
+          <div class="op-chip"
+             title="{{ last_pliage_cmd }} - {{ last_pliage_product }} - {{ last_pliage_user }}">
+
+            <i class="bi bi-box-seam text-success"></i>
+            <span class="prod">{{ last_pliage_product }}</span>
+            <span class="user">{{ last_pliage_user }}</span>
+            <span class="time">{{ last_pliage_date or "--:--" }}</span>
+          </div>
+        </div>
+        <div id="chartLastOps"></div>
       </div>
     </div>
 
@@ -352,6 +332,18 @@
           </span>
         </div>
         <div id="chartTopProducts"></div>
+      </div>
+    </div>
+
+  <!-- Commandes par client --> 
+    <div class="col-12 col-md-6 col-lg-6">
+      <div class="chart-card">
+        <div class="chart-title">Commandes par client ( Top 10 )
+          <span class="text-secondary small">
+            — {{ month_label }} {{ current_year }}
+          </span>
+        </div>
+        <div id="chartOrdersByClient"></div>
       </div>
     </div>
 
@@ -648,80 +640,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-/* 👥 Commandes par client — version épurée sans labels sur l’axe */
-document.addEventListener('DOMContentLoaded', function () {
-  const clients = {{ clients_labels|tojson }};
-  const counts = {{ clients_counts|tojson }};
-
-  const options = {
-    chart: { 
-      type: 'bar',
-      height: 300,
-      toolbar: { show: false },
-      background: 'transparent'
-    },
-    responsive: [{
-  breakpoint: 768,
-  options: {
-    chart: {
-      height: 220
-    },
-    legend: {
-      position: 'bottom'
-    }
-  }
-}],
-    series: [{ name: 'Commandes', data: counts }],
-    xaxis: { 
-      categories: clients,
-      labels: { show: false } // 🚫 on masque les labels de l’axe X
-    },
-    yaxis: { 
-      labels: { style: { colors: '#aeb5cc', fontSize: '12px' } } 
-    },
-    plotOptions: { 
-      bar: { 
-        borderRadius: 8, 
-        distributed: true, 
-        columnWidth: '55%'
-      } 
-    },
-    colors: ['#49BEFF', '#22C55E', '#E9B949', '#49BEFF', '#22C55E', '#E9B949'],
-    dataLabels: { 
-      enabled: true,
-      formatter: val => val,
-      offsetY: -6,
-      style: {
-        fontSize: '12px',
-        fontWeight: 600,
-        colors: ["#e6eef8"]
-      }
-    },
-    grid: { borderColor: 'rgba(255,255,255,0.05)' },
-    legend: {
-      show: true,
-      position: 'bottom',
-      horizontalAlign: 'center',
-      fontSize: '13px',
-      labels: { colors: '#aeb5cc' },
-      markers: { 
-    shape: 'circle',   // ✅ rend les pastilles rondes SVG
-  },
-      itemMargin: { horizontal: 10, vertical: 6 }
-    },
-    tooltip: {
-      theme: 'dark',
-      shared: true,
-      intersect: false,
-      y: {
-        formatter: val => val + " commandes"
-      }
-    },
-  };
-
-  new ApexCharts(document.querySelector("#chartOrdersByClient"), options).render();
-});
-
 /* 📦 Produits les plus livrés */
 document.addEventListener('DOMContentLoaded', function () {
   const products = {{ products_labels|tojson }};
@@ -806,6 +724,80 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   new ApexCharts(document.querySelector("#chartTopProducts"), options).render();
+});
+
+/* 👥 Commandes par client — version épurée sans labels sur l’axe */
+document.addEventListener('DOMContentLoaded', function () {
+  const clients = {{ clients_labels|tojson }};
+  const counts = {{ clients_counts|tojson }};
+
+  const options = {
+    chart: { 
+      type: 'bar',
+      height: 300,
+      toolbar: { show: false },
+      background: 'transparent'
+    },
+    responsive: [{
+  breakpoint: 768,
+  options: {
+    chart: {
+      height: 220
+    },
+    legend: {
+      position: 'bottom'
+    }
+  }
+}],
+    series: [{ name: 'Commandes', data: counts }],
+    xaxis: { 
+      categories: clients,
+      labels: { show: false } // 🚫 on masque les labels de l’axe X
+    },
+    yaxis: { 
+      labels: { style: { colors: '#aeb5cc', fontSize: '12px' } } 
+    },
+    plotOptions: { 
+      bar: { 
+        borderRadius: 8, 
+        distributed: true, 
+        columnWidth: '55%'
+      } 
+    },
+    colors: ['#49BEFF', '#22C55E', '#E9B949', '#49BEFF', '#22C55E', '#E9B949'],
+    dataLabels: { 
+      enabled: true,
+      formatter: val => val,
+      offsetY: -6,
+      style: {
+        fontSize: '12px',
+        fontWeight: 600,
+        colors: ["#e6eef8"]
+      }
+    },
+    grid: { borderColor: 'rgba(255,255,255,0.05)' },
+    legend: {
+      show: true,
+      position: 'bottom',
+      horizontalAlign: 'center',
+      fontSize: '13px',
+      labels: { colors: '#aeb5cc' },
+      markers: { 
+    shape: 'circle',   // ✅ rend les pastilles rondes SVG
+  },
+      itemMargin: { horizontal: 10, vertical: 6 }
+    },
+    tooltip: {
+      theme: 'dark',
+      shared: true,
+      intersect: false,
+      y: {
+        formatter: val => val + " commandes"
+      }
+    },
+  };
+
+  new ApexCharts(document.querySelector("#chartOrdersByClient"), options).render();
 });
 
 </script>
