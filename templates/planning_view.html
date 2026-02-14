@@ -389,5 +389,34 @@ setInterval(loadPlanning,10000);
 
 </script>
 
+<script>
+function updateDateTime(){
+    const el = document.getElementById("datetime");
+
+    const now = new Date();
+
+    const time = now.toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+    });
+
+    const date = now.toLocaleDateString("fr-FR", {
+        weekday:"short",
+        day:"2-digit",
+        month:"short",
+        year:"numeric"
+    });
+
+    el.innerHTML = `
+        <div class="time">${time}</div>
+        <div class="date">${date}</div>
+    `;
+}
+
+updateDateTime();
+setInterval(updateDateTime,1000);
+</script>
+
 </body>
 </html>
