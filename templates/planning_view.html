@@ -258,6 +258,12 @@ body{
     }
 }
 
+.cmd-date{
+    font-size:0.85rem;
+    color:#6EE7B7;
+    font-weight:500;
+    margin-left:8px;
+}
 </style>
 </head>
 
@@ -299,6 +305,7 @@ Planning Atelier
 <span class="rank">P{{ loop.index }}</span>
 {{ o.num }} —
 <span class="cmdcl">{{ o.cmdcl }}</span>
+<span class="cmd-date ms-2">📅 {{ o.date }}</span>
 </div>
 
 <div class="line-bottom">
@@ -371,6 +378,7 @@ async function loadPlanning(){
                 <span class="rank">P${i+1}</span>
                 ${o.num} —
                 <span class="cmdcl">${o.cmdcl}</span>
+                <span class="cmd-date ms-2">📅 ${o.date || ""}</span>
             </div>
             <div class="line-bottom">
                 <span class="chip client">${o.client}</span>

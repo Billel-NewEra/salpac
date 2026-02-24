@@ -2620,7 +2620,7 @@ def planning_data():
         placeholders=",".join(["?"]*len(nums))
 
         orders=conn_local.execute(f"""
-            SELECT num_reservation,cmdl,client,produit,qte,reste
+            SELECT num_reservation,cmdl,client,produit,qte,reste,date_reservation
             FROM orders
             WHERE num_reservation IN ({placeholders})
               AND situation != 'LIVREE'
@@ -2639,6 +2639,9 @@ def planning_data():
                 "cmdcl":o["cmdl"],
                 "client":o["client"],
                 "produit":o["produit"],
+                "date": datetime.fromisoformat(
+                    o["date_reservation"].replace(" ", "T")
+                ).strftime("%d-%m-%Y") if o["date_reservation"] else "",
                 "qte":o["qte"],
                 "reste":o["reste"]
             })
