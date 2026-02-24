@@ -359,6 +359,11 @@
     color:white !important;
 }
 
+.select2-results__option .cmd-date{
+    color:#40bb13 !important;
+    font-weight:600;
+}
+
 
 /*  style elements lignes personalisés   */
 .cmd-cl{
@@ -440,6 +445,20 @@
 }
   optimal */
 
+.planning-date{
+    font-size:0.8rem;
+    color:#94a3b8;
+    font-weight:500;
+}
+
+
+.planning-date{
+    color:#40bb13;
+    font-size:12px;
+    font-weight:500;
+}
+
+
 </style>
 
 <div class="planning-header d-flex justify-content-between align-items-center mb-3">
@@ -492,6 +511,10 @@
   </div>
 
   <div class="planning-meta">
+    <span class="planning-date me-2">
+        {{ o.date }}
+    </span>
+    
     <span class="badge bg-primary me-2">Qte {{ o.qte }}</span>
     <span class="badge bg-warning text-dark me-2">Reste {{ o.reste }}</span>
 
@@ -601,6 +624,10 @@ function formatCommande(c){
                 <span class="cmd-qte">Qte ${c.qte}</span>
                 |
                 <span class="cmd-reste">Reste ${c.reste}</span>
+                |
+                <span class="cmd-date">
+                    📅 ${c.date || ""}
+                </span>
                 |
                 <span class="cmd-statut statut-${statutClass}">
                     ${c.statut.toUpperCase()}
@@ -721,6 +748,9 @@ li.innerHTML = `
   </div>
 
   <div class="planning-meta">
+    <span class="planning-date me-2">
+        ${d.date || ""}
+    </span>
     <span class="badge bg-primary me-2">Qte ${d.qte}</span>
     <span class="badge bg-warning text-dark me-2">Reste ${d.reste}</span>
     ${getStatusBadge(d.statut)}
@@ -892,6 +922,9 @@ function generatePlanning(){
   </div>
 
   <div class="planning-meta">
+    <span class="planning-date me-2">
+        ${o.date || ""}
+    </span>
     <span class="badge bg-primary me-2">Qte ${o.qte}</span>
     <span class="badge bg-warning text-dark me-2">Reste ${o.reste}</span>
     ${getStatusBadge(o.statut)}

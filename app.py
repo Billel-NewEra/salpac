@@ -2108,7 +2108,8 @@ def planning_create():
             produit,
             qte,
             reste,
-            situation
+            situation,
+            date_reservation
         FROM orders
         WHERE situation != 'LIVREE'
           AND date_reservation IS NOT NULL
@@ -2126,6 +2127,9 @@ def planning_create():
                 "cmdcl": r["cmdl"] or "",
                 "client": r["client"] or "",
                 "produit": r["produit"] or "",
+                "date": datetime.fromisoformat(
+                    r["date_reservation"].replace(" ", "T")
+                ).strftime("%d-%m-%Y") if r["date_reservation"] else "",
                 "qte": int(r["qte"] or 0),
                 "reste": int(r["reste"] or 0),
                 "statut": (r["situation"] or "").strip()
@@ -2201,7 +2205,8 @@ def planning():
                 produit,
                 qte,
                 reste,
-                situation
+                situation,
+                date_reservation
             FROM orders
             WHERE num_reservation IN ({placeholders})
         """, nums).fetchall()
@@ -2225,6 +2230,9 @@ def planning():
                 "cmdcl": o["cmdl"] or "",
                 "client": o["client"] or "",
                 "produit": o["produit"] or "",
+                "date": datetime.fromisoformat(
+                    o["date_reservation"].replace(" ", "T")
+                ).strftime("%d-%m-%Y") if o["date_reservation"] else "",
                 "qte": int(o["qte"] or 0),
                 "reste": int(o["reste"] or 0),
                 "statut": (o["situation"] or "").strip(),
@@ -2419,7 +2427,8 @@ def planning_search():
             produit,
             qte,
             reste,
-            situation
+            situation,
+            date_reservation
         {base_query}
         ORDER BY date_reservation ASC
         LIMIT ? OFFSET ?
@@ -2439,6 +2448,9 @@ def planning_search():
                 "cmdcl": r["cmdl"] or "",
                 "client": r["client"] or "",
                 "produit": r["produit"] or "",
+                "date": datetime.fromisoformat(
+                    r["date_reservation"].replace(" ", "T")
+                ).strftime("%d-%m-%Y") if r["date_reservation"] else "",
                 "qte": int(r["qte"] or 0),
                 "reste": int(r["reste"] or 0),
                 "statut": r["situation"],
@@ -2510,7 +2522,15 @@ def planning_view():
         placeholders=",".join(["?"]*len(nums))
 
         orders_data=conn_local.execute(f"""
-            SELECT num_reservation,cmdl,client,produit,qte,reste,situation
+            SELECT 
+                num_reservation,
+                cmdl,
+                client,
+                produit,
+                qte,
+                reste,
+                situation,
+                date_reservation
             FROM orders
             WHERE num_reservation IN ({placeholders})
         """,nums).fetchall()
@@ -2528,6 +2548,9 @@ def planning_view():
                 "cmdcl":o["cmdl"] or "",
                 "client":o["client"] or "",
                 "produit":o["produit"] or "",
+                "date": datetime.fromisoformat(
+                    o["date_reservation"].replace(" ", "T")
+                ).strftime("%d-%m-%Y") if o["date_reservation"] else "",
                 "qte":int(o["qte"] or 0),
                 "reste":int(o["reste"] or 0),
                 "statut":(o["situation"] or "").strip(),
